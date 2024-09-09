@@ -14,7 +14,10 @@ OBJS  = $(SRCS_ASM:.asm=.asm.o)
 OBJS += $(SRCS_CC:.c=.c.o)
 OBJS += $(SRCS_CXX:.cpp=.cpp.o)
 
-KERN_KO = $(ARCH_DIR)/arch.ko
+KCRT_DIR = $(CURRENT_PATH)/kcrt
+KERN_KO = $(ARCH_DIR)/arch.ko $(KCRT_DIR)/kcrt.ko
+
+MAKEOPT = TARGET_ARCH=$(TARGET_ARCH)
 
 default:
 	$(MAKE) $(KERNEL_IMAGE)
@@ -26,7 +29,8 @@ clean:
 	@find . -type f -name "*.o" -exec rm {} \;
 	@find . -type f -name "*.o.tmp" -exec rm {} \;
 	@if [ -f $(TARGET_MODULE) ]; then rm $(TARGET_MODULE); fi
-	$(MAKE) -C $(ARCH_DIR)/ clean
+	$(MAKE) $(MAKEOPT) -C $(ARCH_DIR)/ clean
+	$(MAKE) $(MAKEOPT) -C $(KCRT_DIR)/ clean
 
 $(TARGET_MODULE): $(OBJS)
 	$(LD) -r $(shell find . -name "*.o" | sort) -o $(TARGET_MODULE)
@@ -35,7 +39,10 @@ $(KERNEL_IMAGE): $(TARGET_MODULE) $(KERN_KO)
 	$(LD) -T $(LDSCRIPT) $(KERN_KO) $(TARGET_MODULE) -o $(KERNEL_IMAGE)
 
 $(ARCH_DIR)/arch.ko:
-	$(MAKE) -C $(ARCH_DIR)/
+	$(MAKE) $(MAKEOPT) -C $(ARCH_DIR)/
+
+$(KCRT_DIR)/kcrt.ko:
+	$(MAKE) $(MAKEOPT) -C $(KCRT_DIR)/
 	
 %.c.o: %.c
 	echo $(ARCH_DIR)

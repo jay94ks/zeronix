@@ -6,11 +6,13 @@ LD    		= /opt/cross/bin/i686-elf-ld
 STRIP 		= /opt/cross/bin/i686-elf-strip
 OBJCPY		= /opt/cross/bin/i686-elf-objcopy
 
+TARGET_ARCH = x86
 ARCH_DIR    = $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 INC_DIR     = $(ARCH_DIR)/../../include
 
-CFLAGS  	= -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I $(INC_DIR)
-CXXFLAGS	= -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -I $(INC_DIR)
+CDEFS       = -D__ARCH_X86__=1
+CFLAGS  	= -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I $(INC_DIR) $(CDEFS)
+CXXFLAGS	= -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -I $(INC_DIR) $(CDEFS)
 NASMFLAGS	= -felf32
 
 LDSCRIPT	= $(ARCH_DIR)/link.ld
