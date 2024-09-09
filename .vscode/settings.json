@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "types.h": "c",
+        "i686.h": "c",
+        "multiboot.h": "c",
+        "bootenv.h": "c"
+    }
+}
