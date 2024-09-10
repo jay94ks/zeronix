@@ -11,7 +11,9 @@
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE",
-                "__ARCH_X86__=1"
+                "__ARCH_X86__=1",
+                "__ARCH__=1",
+                "__KERNEL__=1"
             ],
             "windowsSdkVersion": "10.0.22621.0",
             "compilerPath": "/opt/cross/bin/i686-elf-gcc",

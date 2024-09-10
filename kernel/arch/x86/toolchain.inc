@@ -11,7 +11,7 @@ TARGET_ARCH = x86
 ARCH_DIR    = $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 INC_DIR     = $(ARCH_DIR)/../../include
 
-CDEFS       = -D__ARCH_X86__=1
+CDEFS       = -D__ARCH_X86__=1 -D__ARCH__=1 -D__KERNEL__=1
 
 # CFLAGS  	= -std=gnu99 -ffreestanding -O2 -Wall -Wextra -I $(INC_DIR) $(CDEFS)
 # CXXFLAGS	= -ffreestanding -O2 -Wall -Wextra -fno-exceptions -fno-rtti -I $(INC_DIR) $(CDEFS)

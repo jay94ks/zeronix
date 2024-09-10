@@ -164,10 +164,6 @@ uint8_t karch_set_hwint_i8259(uint8_t n, karch_i8259_cb_t cb, void* data) {
 }
 
 void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
-    
-    uint16_t* vga = (uint16_t* ) 0xb8000;
-    vga[1] = 'h' | (15 << 8);
-
     if (i8259_cb[n]) {
         i8256_t e;
 

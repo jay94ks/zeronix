@@ -1,4 +1,20 @@
+SEG_KERN_CS equ (1 * 8)
+
 section .text
+
+; --> segment loader.
+%macro load_seg 1 ; DEST
+    push ebp
+    mov ebp, esp
+
+    mov eax, [ebp + 8]
+    mov ax, %1
+
+    jmp .retval
+    .retval:
+        pop ebp
+        ret
+%endmacro
 
 global read_cr0;
 global read_cr3;
@@ -13,6 +29,17 @@ global write_msr;
 
 global load_gdt;
 global load_idt;
+global load_ldt;
+global load_tr;
+global store_gdt;
+global store_idt;
+    
+global load_kern_cs
+global load_ds
+global load_es
+global load_fs
+global load_gs
+global load_ss
 
 global cpu_hlt;
 global cpu_cli;
@@ -183,6 +210,73 @@ load_idt:
     mov esp, ebp
     pop ebp
     ret
+
+load_ldt:
+    push ebp
+    mov ebp, esp
+
+    lldt [ebp + 8]
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+load_tr:
+    push ebp
+    mov ebp, esp
+
+    ltr [ebp + 8]
+
+    mov esp, ebp
+    pop ebp
+    ret
+    
+store_gdt:
+    push ebp
+    mov ebp, esp
+
+    mov eax, [ebp + 8]
+    sgdt [eax]
+
+    mov esp, ebp
+    pop ebp
+    ret
+    
+store_idt:
+    push ebp
+    mov ebp, esp
+
+    mov eax, [ebp + 8]
+    sidt [eax]
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+load_kern_cs:
+    push ebp
+    mov ebp, esp
+    ; mov eax, [ebp + 8] ; ??
+
+    jmp SEG_KERN_CS:.newcs
+    .newcs:
+        pop ebp
+        ret
+
+load_ds: 
+    load_seg ds
+    
+load_es: 
+    load_seg es
+
+load_fs:
+    load_seg fs
+
+load_gs:
+    load_seg gs
+
+load_ss:
+    load_seg ss
 
 cpu_hlt:
     hlt

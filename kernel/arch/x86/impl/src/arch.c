@@ -2,6 +2,7 @@
 #include <zeronix/boot.h>
 #include <zeronix/kcrt/string.h>
 #include <zeronix/arch/x86/klib.h>
+#include <zeronix/arch/x86/layout.h>
 
 #include "min86/page.h"
 #include "min86/gdt.h"
@@ -13,22 +14,26 @@
 
 // --
 kbootinfo_t kinfo;
-uint8_t i = 0;
 
-void karch_timer_test(const i8256_t* info) {
-    uint8_t n = i++;
-    char ch = 'a' + n % ('z' - 'a');
-
-    uint16_t* vga = (uint16_t* ) 0xb8000;
-    *vga = ch | (15 << 8);
-}
+// --
+void karch_early_init();
+void karch_smp_init();
 
 /**
  * arch-specific initialization. 
+ * the arch'll be initialized to minimal protected x86 mode.
+ * after the kernel is ready to enter SMP, it'll call `karch_smp_init()`.
  */
 void karch_init(kbootinfo_t* info) {
     kmemcpy(&kinfo, info, sizeof(kinfo));
+    karch_early_init();
+    karch_smp_init();
+}
 
+/**
+ * prepare IDT/GDT, i8259 PIC, shift to new segment and early paging.
+ */
+void karch_early_init() {
     // --> initialize GDT and TSS.
     karch_init_gdt();
     karch_init_tss();
@@ -44,18 +49,24 @@ void karch_init(kbootinfo_t* info) {
     // --> then, apply IDT entries here.
     karch_flush_idt();
 
+    // --> load LDT and setup TSS.
+    load_ldt(SEG_SEL(GDT_LDT));
+    load_tr(SEG_TSS(0));
+
+    // --> shift to new kernel segment.
+    load_kern_cs();
+    load_ds(SEG_SEL(GDT_KERN_DS));
+    load_es(SEG_SEL(GDT_KERN_DS));
+    load_fs(SEG_SEL(GDT_KERN_DS));
+    load_gs(SEG_SEL(GDT_KERN_DS));
+    load_ss(SEG_SEL(GDT_KERN_DS));
+
     // --> re-initialize early paging.
     //   : after this call, bootstrap code is not needed anymore.
     karch_init_page(&kinfo);
-
-    // --> set hw interrupt.
-    karch_set_hwint_i8259(I8259_TIMER, karch_timer_test, 0);
-    karch_unmask_i8259(I8259_TIMER);
-
-    cpu_sti();
-
-    // --> 10 tick per second.
-    karch_init_i8253(6000);
-    while(1);
 }
 
+void karch_smp_init() {
+    // TODO: acpi init.
+    // TODO: apic init...
+}

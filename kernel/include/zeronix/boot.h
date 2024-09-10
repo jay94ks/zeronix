@@ -3,7 +3,6 @@
 
 #include <zeronix/types.h>
 
-
 /**
  * kbootmem_t.
  */

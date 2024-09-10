@@ -21,6 +21,17 @@ extern void write_msr(uint32_t reg, uint32_t high, uint32_t low);
 
 extern void load_gdt(void*);
 extern void load_idt(void*);
+extern void load_ldt(uint32_t);
+extern void load_tr(uint32_t);
+extern void store_gdt(void*);
+extern void store_idt(void*);
+
+extern void load_kern_cs();
+extern void load_ds(uint32_t ds);
+extern void load_es(uint32_t ds);
+extern void load_fs(uint32_t ds);
+extern void load_gs(uint32_t ds);
+extern void load_ss(uint32_t ds);
 
 extern void cpu_hlt();
 extern void cpu_cli();
