@@ -1,13 +1,6 @@
 #ifndef __ZERONIX_ARCH_X86_I686_H__
 #define __ZERONIX_ARCH_X86_I686_H__
 
-#ifdef _MSC_VER
-#define __attribute__(...)
-#endif
-
-#define __aligned(n)    __attribute__((aligned(n)))
-#define __packed        __attribute__((packed))
-
 /* Page table specific flags. */
 #define I686_VM_DIRTY    (1L<< 6)	/* Dirty */
 #define I686_VM_PS  	 (1L<< 7)	/* Page size. */

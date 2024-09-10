@@ -12,12 +12,13 @@
 #include "min86/except.h"
 #include "min86/i8253.h"
 
+#include "smp/acpi.h"
+
 // --
 kbootinfo_t kinfo;
 
 // --
 void karch_early_init();
-void karch_smp_init();
 
 /**
  * arch-specific initialization. 
@@ -27,7 +28,12 @@ void karch_smp_init();
 void karch_init(kbootinfo_t* info) {
     kmemcpy(&kinfo, info, sizeof(kinfo));
     karch_early_init();
-    karch_smp_init();
+    
+    // --> initialize ACPI.
+    if (karch_init_acpi() == 0) {
+        return;
+    }
+
 }
 
 /**
@@ -64,9 +70,4 @@ void karch_early_init() {
     // --> re-initialize early paging.
     //   : after this call, bootstrap code is not needed anymore.
     karch_init_page(&kinfo);
-}
-
-void karch_smp_init() {
-    // TODO: acpi init.
-    // TODO: apic init...
 }

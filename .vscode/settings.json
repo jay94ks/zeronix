@@ -10,6 +10,7 @@
         "cpuinfo.h": "c",
         "layout.h": "c",
         "string.h": "c",
-        "klib.h": "c"
+        "klib.h": "c",
+        "acpi.h": "c"
     }
 }

@@ -1,6 +1,14 @@
 #ifndef __ZERNOIX_TYPES_H__
 #define __ZERNOIX_TYPES_H__
 
+#ifdef _MSC_VER
+#define __attribute__(...)
+#endif
+
+#define __aligned(n)    __attribute__((aligned(n)))
+#define __packed        __attribute__((packed))
+
+
 /**
  * standard integer types.
  */
