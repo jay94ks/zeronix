@@ -2,11 +2,11 @@
 #include <zeronix/arch/x86/klib.h>
 #include <zeronix/arch/x86/i686.h>
 
-// --> Genu ineI ntel
-const char* __vendor_intel = "ntel";
+// --> Genu ineI ntel --> letn
+const char* __vendor_intel = "letn";
 
-// --> Auth enti cAMD
-const char* __vendor_amd = "cAMD";
+// --> Auth enti cAMD --> DMAc
+const char* __vendor_amd = "DMAc";
 
 uint32_t kcpuinfo(karch_feature_t feature) {
     if (!feature) {
@@ -16,18 +16,21 @@ uint32_t kcpuinfo(karch_feature_t feature) {
     uint32_t eax = 0, ebx, edx, ecx;
     uint32_t ef_eax = 0, ef_ebx = 0, ef_edx = 0, ef_ecx = 0;
 
-    read_cpuid(&eax, &ebx, &edx, &ecx);
+    read_cpuid(&eax, &ebx, &ecx, &edx);
 
     if (eax <= 0) {
         return 0; // --> <= pentium.
     }
+
+	const uint32_t v_intel = *((uint32_t*)__vendor_intel);
+	const uint32_t v_amd = *((uint32_t*)__vendor_amd);
 
     uint8_t intel = *((uint32_t*)__vendor_intel) == ecx;
     uint8_t amd = *((uint32_t*)__vendor_amd) == ecx;
     
     // --> load exact cpuid.
     eax = 1;
-    read_cpuid(&eax, &ebx, &edx, &ecx);
+    read_cpuid(&eax, &ebx, &ecx, &edx);
 
     uint32_t stepping = eax & 0x0f;
     uint32_t model = (eax >> 4) & 0x0f;

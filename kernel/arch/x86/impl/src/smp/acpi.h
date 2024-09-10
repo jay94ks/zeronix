@@ -1,7 +1,7 @@
-#ifndef __ZERONIX_ARCH_X86_SMP_ACPI_H__
-#define __ZERONIX_ARCH_X86_SMP_ACPI_H__
+#ifndef __ZERONIX_ARCH_X86_IMPL_SMP_ACPI_H__
+#define __ZERONIX_ARCH_X86_IMPL_SMP_ACPI_H__
 
-#include <zeronix/arch/x86/smp/acpi-types.h>
+#include <zeronix/arch/x86/smp/acpi.h>
 
 /**
  * initialize ACPI and returns non-zero if succeed.
@@ -16,8 +16,14 @@ uint8_t karch_init_acpi();
 uint8_t karch_acpi_supported();
 
 /**
+ * reboot the machine by ACPI.
+ * returns non-zero if supported and executed.
+ */
+uint8_t karch_acpi_reboot();
+
+/**
  * turn off the machine by ACPI. 
- * returns true if supported and executed.
+ * returns non-zero if supported and executed.
  */
 uint8_t karch_acpi_poweroff();
 

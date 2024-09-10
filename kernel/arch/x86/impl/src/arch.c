@@ -30,10 +30,14 @@ void karch_init(kbootinfo_t* info) {
     karch_early_init();
     
     // --> initialize ACPI.
-    if (karch_init_acpi() == 0) {
+    if (karch_init_acpi() == 0 ||
+        karch_init_apic() == 0)
+    {
+        // --> working as min86 mode.
         return;
     }
 
+    // --> init SMP.
 }
 
 /**

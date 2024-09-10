@@ -12,9 +12,12 @@ uint16_t acpi_poff_typb;
 uint16_t acpi_pm1a_cnt_blk;
 uint16_t acpi_pm1b_cnt_blk;
 
+uint16_t acpi_reset_addr;
+uint16_t acpi_reset_value;
+
 // --
 uint8_t karch_acpi_check_rsdt();
-void karch_acpi_prepare_poweroff();
+void karch_acpi_prepare_params();
 
 // https://uefi.org/sites/default/files/resources/ACPI_6_1.pdf
 // --
@@ -35,6 +38,9 @@ uint8_t karch_init_acpi() {
 
     acpi_pm1a_cnt_blk = 0;
     acpi_pm1b_cnt_blk = 0;
+
+    acpi_reset_addr = 0;
+    acpi_reset_value = 0;
 
     // --
     void* ptr = karch_acpi_find_rsdp(&version);
@@ -61,11 +67,11 @@ uint8_t karch_init_acpi() {
         return 0;
     }
 
-    karch_acpi_prepare_poweroff();
+    karch_acpi_prepare_params();
     return 1;
 }
 
-void karch_acpi_prepare_poweroff() {
+void karch_acpi_prepare_params() {
     karch_acpi_fadt_t* fadt = karch_acpi_find_fadt();
     if (!fadt) {
         return;
@@ -138,13 +144,34 @@ void karch_acpi_prepare_poweroff() {
 
     acpi_pm1a_cnt_blk = fadt->pm1a_cnt_blk;
     acpi_pm1b_cnt_blk = fadt->pm1b_cnt_blk;
+
+    acpi_reset_addr = fadt->reset_reg.addr;
+    acpi_reset_value = fadt->reset_value;
 }
 
 uint8_t karch_acpi_supported() {
     return acpi_rxsdt && acpi_scale;
 }
 
+uint8_t karch_acpi_reboot() {
+    if (!karch_acpi_supported()) {
+        return 0;
+    }
+
+    if (!acpi_reset_addr) {
+        return 0;
+    }
+
+    cpu_out8(acpi_reset_addr, acpi_reset_value);
+    // --> this is not working in QEMU, PCIe is needed i think.
+    return 0;
+}
+
 uint8_t karch_acpi_poweroff() {
+    if (!karch_acpi_supported()) {
+        return 0;
+    }
+
     if (!acpi_pm1a_cnt_blk) {
         return 0;
     }

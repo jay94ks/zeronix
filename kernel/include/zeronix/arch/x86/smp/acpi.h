@@ -1,5 +1,5 @@
-#ifndef __ZERONIX_ARCH_X86_SMP_ACPI_TYPES_H__
-#define __ZERONIX_ARCH_X86_SMP_ACPI_TYPES_H__
+#ifndef __ZERONIX_ARCH_X86_SMP_ACPI_H__
+#define __ZERONIX_ARCH_X86_SMP_ACPI_H__
 
 #include <zeronix/types.h>
 
@@ -124,6 +124,7 @@ struct karch_x86_acpi_madt_nmi {
 } __packed;
 
 /* shorthands. */
+typedef struct karch_x86_acpi_madt_lapic karch_acpi_madt_lapic_t;
 typedef struct karch_x86_acpi_madt_ioapic karch_acpi_madt_ioapic_t;
 typedef struct karch_x86_acpi_madt_nmi karch_acpi_madt_nmi_t;
 
