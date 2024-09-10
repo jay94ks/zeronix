@@ -6,7 +6,7 @@
 #include "tpg.h"
 
 // --
-static uint32_t temp_pagedir[I686_VM_DIR_ENTRIES] __aligned(4096);
+static uint32_t pagedir[I686_VM_DIR_ENTRIES] __aligned(4096);
 kbootinfo_t temp_bootinfo;
 
 // --
@@ -60,7 +60,7 @@ void kboot_panic(const char* text) {
 
 void kboot_read_mbinfo(kbootinfo_t* boot, mbinfo_t* info) {
     boot->mem_high_phys = 0;
-    boot->pagedir = temp_pagedir;
+    boot->pagedir = pagedir;
     boot->freepde = 0;
 
     boot->kern_virt_base = mb_virt_base;

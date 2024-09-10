@@ -2,6 +2,7 @@
 #include <zeronix/boot.h>
 #include <zeronix/kcrt/string.h>
 
+#include "min86/page.h"
 #include "min86/gdt.h"
 #include "min86/tss.h"
 #include "min86/idt.h"
@@ -31,6 +32,10 @@ void karch_init(kbootinfo_t* info) {
 
     // --> then, apply IDT entries here.
     karch_flush_idt();
+
+    // --> re-initialize early paging.
+    //   : after this call, bootstrap code is not needed anymore.
+    karch_init_page(&kinfo);
 
 }
 

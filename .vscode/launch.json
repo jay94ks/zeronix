@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "name": "Debug",
+            "type": "by-gdb",
+            "request": "launch",
+            "program": "${workspaceRoot}/kernel/kernel.elf",
+            "remote": {
+                "enabled": true,
+                "address": "127.0.0.1:1234",
+                "execfile": "${workspaceRoot}/kernel/kernel.elf"
+            },
+            "cwd": "${workspaceRoot}/kernel",
+            "commandsBeforeExec": [
+                "symbol-file ./kernel.elf"
+            ],
+            "preLaunchTask": "qemu-run",
+            "postDebugTask": "code-clean"
+            
+        },
+        {
+            "name": "Launch",
+            "type": "f5anything",
+            "request": "launch",
+            "command": "cd ${workspaceRoot}/kernel/ && make run",
+        }
+    ]
+}

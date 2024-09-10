@@ -22,8 +22,15 @@ MAKEOPT = TARGET_ARCH=$(TARGET_ARCH)
 default:
 	$(MAKE) $(KERNEL_IMAGE)
 
-debug: $(KERNEL_IMAGE)
-	qemu-system-i386 -kernel $(KERNEL_IMAGE)
+debug: 
+	$(MAKE) clean
+	$(MAKE) debug-2nd
+	
+debug-2nd: $(KERNEL_IMAGE)
+	qemu-system-i386 -m 256M -kernel $(KERNEL_IMAGE) -s -S
+
+run: $(KERNEL_IMAGE)
+	qemu-system-i386 -m 256M -kernel $(KERNEL_IMAGE)
 
 clean:
 	@find . -type f -name "*.o" -exec rm {} \;
