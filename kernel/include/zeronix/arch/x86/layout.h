@@ -1,53 +1,52 @@
-#ifndef __ZERONIX_ARCH_X86_CONSTS_H__
-#define __ZERONIX_ARCH_X86_CONSTS_H__
+#ifndef __ZERONIX_ARCH_X86_LAYOUT_H__
+#define __ZERONIX_ARCH_X86_LAYOUT_H__
 
 /**
  * do not include this file except arch specific code space.
  * this can cause compiler-dizzy due to macro definitions. 
  */
 
+#define PRIV_KERN   0
+#define PRIV_USER   3
+#define PRIV_MASK   0x03
 
-/* Constants for protected mode. */
+// --
+#define MAX_IDT 256
+#define MAX_CPU 16
 
-/* Table sizes. */
-#define IDT_SIZE 256	/* the table is set to it's maximal size */
+enum {
+    GDT_NULL = 0,
+    GDT_KERN_CS,
+    GDT_KERN_DS,
+    GDT_USER_CS,
+    GDT_USER_DS,
+    GDT_LDT,
+    GDT_TSS,
 
-/* GDT layout (SYSENTER/SYSEXIT compliant) */
-#define KERN_CS_INDEX        1
-#define KERN_DS_INDEX        2
-#define USER_CS_INDEX        3
-#define USER_DS_INDEX        4
-#define LDT_INDEX            5
-#define TSS_INDEX            6
-#define GDT_SIZE             7
+    /* TODO: tss per cpu. */
 
-#define SEG_SELECTOR(i)          ((i)*8)
-#define KERN_CS_SELECTOR    SEG_SELECTOR(KERN_CS_INDEX)
-#define KERN_DS_SELECTOR    SEG_SELECTOR(KERN_DS_INDEX)
-#define USER_CS_SELECTOR    (SEG_SELECTOR(USER_CS_INDEX) | USER_PRIVILEGE)
-#define USER_DS_SELECTOR    (SEG_SELECTOR(USER_DS_INDEX) | USER_PRIVILEGE)
-#define LDT_SELECTOR        SEG_SELECTOR(LDT_INDEX)
-#define TSS_SELECTOR	    SEG_SELECTOR(TSS_INDEX)
+    GDT_MAX = GDT_TSS + MAX_CPU
+};
 
-#define DESC_SIZE	8
+/* Index for TSS. */
+#define GDT_TSS_INDEX(x)    (GDT_TSS + (x))
 
-/* Privileges. */
-#define INTR_PRIVILEGE       0	/* kernel and interrupt handlers */
-#define USER_PRIVILEGE       3	/* servers and user processes */
-#define RPL_MASK             0x03	/* bits in selector RPL */
+// --> segment selector.
+#define SEG_SEL(x)          ((x) * 8)
+#define SEG_TSS(x)          (SEG_SEL(GDT_TSS) + (x))
 
-/* 286 hardware constants. */
+// --
+#define BYTE_GRAN_MAX   0xFFFFFL   /* maximum size for byte granular segment */
+#define GRANULARITY_SHIFT   16  /* shift for limit --> granularity */
+#define OFFSET_HIGH_SHIFT   16  /* shift for (gate) offset --> offset_high */
+#define PAGE_GRAN_SHIFT     12  /* extra shift for page granular limits */
 
-/* Exception vector numbers. */
-#define BOUNDS_VECTOR        5	/* bounds check failed */
-#define INVAL_OP_VECTOR      6	/* invalid opcode */
-#define COPROC_NOT_VECTOR    7	/* coprocessor not available */
-#define DOUBLE_FAULT_VECTOR  8
-#define COPROC_SEG_VECTOR    9	/* coprocessor segment overrun */
-#define INVAL_TSS_VECTOR    10	/* invalid TSS */
-#define SEG_NOT_VECTOR      11	/* segment not present */
-#define STACK_FAULT_VECTOR  12	/* stack exception */
-#define PROTECTION_VECTOR   13	/* general protection */
+// --
+#define GRANULAR  	  0x80	/* set for 4K granularilty */
+#define DEFAULT   	  0x40	/* set for 32-bit defaults (executable seg) */
+#define BIG       	  0x40	/* set for "BIG" (expand-down seg) */
+#define AVL        	  0x10	/* 0 for available */
+#define LIMIT_HIGH   	  0x0F	/* mask for high bits of limit */
 
 /* Selector bits. */
 #define TI                0x04	/* table indicator */
@@ -83,7 +82,6 @@
 #define INT_GATE_TYPE	(INT_286_GATE | DESC_386_BIT)
 #define TSS_TYPE	(AVL_286_TSS  | DESC_386_BIT)
 
-
 /* Extra 386 hardware constants. */
 
 /* Exception vector numbers. */
@@ -102,18 +100,8 @@
 				/* LDT's and TASK_GATE's don't need it */
 
 /* Base and limit sizes and shifts. */ 
-#define BASE_HIGH_SHIFT     24  /* shift for base --> base_high */
-#define BYTE_GRAN_MAX   0xFFFFFL   /* maximum size for byte granular segment */
-#define GRANULARITY_SHIFT   16  /* shift for limit --> granularity */
-#define OFFSET_HIGH_SHIFT   16  /* shift for (gate) offset --> offset_high */
-#define PAGE_GRAN_SHIFT     12  /* extra shift for page granular limits */
 
 /* Granularity byte. */
-#define GRANULAR  	  0x80	/* set for 4K granularilty */
-#define DEFAULT   	  0x40	/* set for 32-bit defaults (executable seg) */
-#define BIG       	  0x40	/* set for "BIG" (expand-down seg) */
-#define AVL        	  0x10	/* 0 for available */
-#define LIMIT_HIGH   	  0x0F	/* mask for high bits of limit */
 
 /* Program stack words and masks. */
 #define INIT_PSW      0x0200    /* initial psw */
@@ -164,14 +152,4 @@
 #define AMD_MSR_EFER		0xC0000080	/* extended features msr */
 #define AMD_MSR_STAR		0xC0000081	/* SYSCALL params msr */
 
-/* trap styles recorded on kernel entry and exit */
-#define KTS_NONE	1 /* invalid */
-#define KTS_INT_HARD	2 /* exception / hard interrupt */
-#define KTS_INT_ORIG	3 /* soft interrupt from libc */
-#define KTS_INT_UM	4 /* soft interrupt from usermapped code */
-#define KTS_FULLCONTEXT	5 /* must restore full context */
-#define KTS_SYSENTER	6 /* SYSENTER instruction (usermapped) */
-#define KTS_SYSCALL	7 /* SYSCALL instruction (usermapped) */
-
-
-#endif
+#endif // __ZERONIX_ARCH_X86_LAYOUT_H__

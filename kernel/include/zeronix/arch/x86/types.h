@@ -81,8 +81,35 @@ struct karch_x86_tss_t {
     karch_reg16_t iobase;
 } __packed;
 
+/**
+ * karch_x86_stackmark_t
+ */
+struct karch_x86_stackmark_t {
+    karch_reg32_t proc;
+    karch_reg32_t cpu;
+} __packed;
+
 /* shorthand. */
 typedef struct karch_x86_tss_t karch_tss_t;
+typedef struct karch_x86_stackmark_t karch_stackmark_t;
+
+/**
+ * karch_x86_intr_frame_t
+ * interrupt frame.
+ */
+struct karch_x86_intr_frame_t {
+    /* hardware defined. */
+    karch_reg32_t ip;
+    karch_reg32_t cs;
+    karch_reg32_t flags;
+
+    /* only for crossing priv. */
+    karch_reg32_t sp;
+    karch_reg32_t ss;
+};
+
+/* short hand. */
+typedef struct karch_x86_intr_frame_t karch_intr_frame_t;
 
 
 #endif

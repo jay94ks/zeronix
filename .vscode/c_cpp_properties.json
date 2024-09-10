@@ -10,7 +10,8 @@
             "defines": [
                 "_DEBUG",
                 "UNICODE",
-                "_UNICODE"
+                "_UNICODE",
+                "__ARCH_X86__=1"
             ],
             "windowsSdkVersion": "10.0.22621.0",
             "compilerPath": "/opt/cross/bin/i686-elf-gcc",

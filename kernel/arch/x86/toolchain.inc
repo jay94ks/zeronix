@@ -5,6 +5,7 @@ CXX   		= /opt/cross/bin/i686-elf-g++
 LD    		= /opt/cross/bin/i686-elf-ld
 STRIP 		= /opt/cross/bin/i686-elf-strip
 OBJCPY		= /opt/cross/bin/i686-elf-objcopy
+OBJDUMP     = /opt/cross/bin/i686-elf-objdump
 
 TARGET_ARCH = x86
 ARCH_DIR    = $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))

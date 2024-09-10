@@ -3,6 +3,12 @@
         "types.h": "c",
         "i686.h": "c",
         "multiboot.h": "c",
-        "bootenv.h": "c"
+        "bootenv.h": "c",
+        "consts.h": "c",
+        "tss.h": "c",
+        "gdt.h": "c",
+        "cpuinfo.h": "c",
+        "layout.h": "c",
+        "string.h": "c"
     }
 }

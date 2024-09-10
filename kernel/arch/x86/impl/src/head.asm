@@ -2,6 +2,8 @@ section .kstack
 _karch_stack_head:
 	resb 16384	; 1K stack to call `kboot` function.
 _karch_stack_tail:
+	resb 16384
+_karch_tss0_stack:
 
 ;=======================================================================
 ; Architecture Initializer.
@@ -9,6 +11,8 @@ _karch_stack_tail:
 
 section .text
 global __karch_init
+global _karch_tss0_stack
+
 extern kmain
 extern karch_init
 
