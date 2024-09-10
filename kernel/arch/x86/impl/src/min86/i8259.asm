@@ -36,13 +36,13 @@ extern karch_i8259_hwint;
     je .kern
     ; ip, cs, flags + sp, ss are pushed.
     mov ebx, 0  ; --> user to kernel switched.
-    mov eax, ebp
-    sub eax, 12
 
     .all:
+        ; --> compute frame pointer.
+        mov eax, ebp
+        sub eax, 12
 
         ; call karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame).
-
         push eax        ; --> frame.
         push ebx        ; --> k
 
@@ -60,12 +60,6 @@ extern karch_i8259_hwint;
     .kern:
         ; ip, cs, flags are pushed.
         mov ebx, 1  ; --> not switched.
-
-        ; compute frame pointer.
-        ; fill dummy for sp + ss fields on the structure.
-        mov eax, ebp
-        sub eax, 12 - 8
-
         jmp .all
 %endmacro
 

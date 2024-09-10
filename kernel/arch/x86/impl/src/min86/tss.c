@@ -26,6 +26,7 @@ void karch_init_tss() {
     syscall_impl |= kcpuinfo(KCPUF_SYSENTER)? USE_SYSENTER : 0;
     syscall_impl |= kcpuinfo(KCPUF_SYSCALL) ? USE_SYSCALL : 0;
 
+    // --> CPU zero.
     karch_setup_tss(0, (void*)(&_karch_tss0_stack));
 }
 

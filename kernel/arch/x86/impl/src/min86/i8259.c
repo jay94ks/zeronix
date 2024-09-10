@@ -51,6 +51,7 @@ static const struct gatevec gv_i8259_slave[] = {
 
 // --
 karch_i8259_cb_t i8259_cb[16];
+void* i8259_cb_data[16];
 
 // --
 
@@ -74,6 +75,7 @@ void karch_program_i8259();
 // --
 void karch_init_i8259() {
     kmemset(i8259_cb, 0, sizeof(i8259_cb));
+    kmemset(i8259_cb_data, 0, sizeof(i8259_cb_data));
 
     karch_load_idt_gatevec(gv_i8259_master, GATEVEC_PIC_MASTER);
     karch_load_idt_gatevec(gv_i8259_slave, GATEVEC_PIC_SLAVE);
@@ -135,20 +137,42 @@ void karch_i8259_eoi(uint32_t n) {
     }
 }
 
-karch_i8259_cb_t karch_set_hwint_i8259(uint8_t n, karch_i8259_cb_t cb) {
+uint8_t karch_get_hwint_i8259(uint8_t n, karch_i8259_cb_t* cb, void** data) {
     if (n > 15) {
         return 0;
     }
 
-    karch_i8259_cb_t old = i8259_cb[n];
-    i8259_cb[n] = cb;
+    if (cb) {
+        *cb = i8259_cb[n];
+    }
 
-    return old;
+    if (data) {
+        *data = i8259_cb_data[n];
+    }
+
+    return 1;
+}
+
+uint8_t karch_set_hwint_i8259(uint8_t n, karch_i8259_cb_t cb, void* data) {
+    if (n > 15) {
+        return 0;
+    }
+
+    i8259_cb[n] = cb;
+    i8259_cb_data[n] = data;
+    return 1;
 }
 
 void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
     if (i8259_cb[n]) {
-        i8259_cb[n](n, k, frame);
+        i8256_t e;
+
+        e.n = n;
+        e.k = k;
+        e.frame = frame;
+        e.data = i8259_cb_data[n];
+
+        i8259_cb[n](&e);
     }
 
     // --> emit EOI to PIC master and slave.
