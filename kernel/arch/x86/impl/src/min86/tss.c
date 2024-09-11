@@ -4,6 +4,7 @@
 #include <zeronix/kcrt/string.h>
 #include <zeronix/arch/x86/layout.h>
 #include <zeronix/arch/x86/cpuinfo.h>
+#include <zeronix/arch/x86/init.h>
 
 // --
 karch_tss_t tss[MAX_CPU] __aligned(8);
@@ -15,9 +16,6 @@ enum {
     USE_SYSCALL = 2
 };
 
-extern void* _karch_tss0_stack; // --> from head.asm.
-// --
-
 void karch_init_tss() {
     kmemset(tss, 0, sizeof(tss));
     kmemset(stackmark, 0, sizeof(stackmark));
@@ -27,7 +25,7 @@ void karch_init_tss() {
     syscall_impl |= kcpuinfo(KCPUF_SYSCALL) ? USE_SYSCALL : 0;
 
     // --> CPU zero.
-    karch_setup_tss(0, (void*)(&_karch_tss0_stack));
+    karch_setup_tss(0, karch_stacktop_for(0));
 }
 
 karch_tss_t* karch_get_tss(uint8_t n) {

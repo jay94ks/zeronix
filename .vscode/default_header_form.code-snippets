@@ -1,0 +1,94 @@
+{
+	"C/C++ Default Header Form": {
+		"prefix": "kheader",
+
+		"body": [
+			"// ${1:${RELATIVE_FILEPATH/[^a-zA-Z0-9]/_/g}}",
+			"// PRESS TAB TO GENERATE COMPLETELY.",
+			"",
+			"#ifndef __${1/(.*)/${1:/upcase}/}__",
+			"#define __${1/(.*)/${1:/upcase}/}__",
+			"",
+			"#endif"
+		],
+		"description": "C/C++ Default Header Format"
+	},
+
+	"C/C++ Header Cpp Check": {
+		"prefix": "cppcheck",
+		"body": [
+			"#ifdef __cplusplus",
+			"extern \"C\" {",
+			"#endif",
+			"",
+			"// code here.",
+			"",
+			"#ifdef __cplusplus",
+			"}",
+			"#endif"
+		],
+		"description": "C/C++ Header Cpp Check"
+	},
+
+	"C Struct Typedef": {
+		"prefix": "cstruct",
+		"body": [
+			"/* description here.*/"
+			"typedef struct {"
+			"\t// code here."
+			"\t// to complete snippet, press tab."
+			"} ${1};"
+		],
+		"description": "C Struct and its Alias"
+	},
+
+	"C Packed Struct Typedef": {
+		"prefix": "cpacked",
+		"body": [
+			"/* description here.*/"
+			"struct ${1} {"
+			"\t// code here."
+			"\t// to complete snippet, press tab."
+			"} __packed;",
+			"typedef struct ${1} ${1}_t"
+		],
+		"description": "C Packed Struct Typedef"
+	},
+
+	"C++ Class": {
+		"prefix": "cppclass",
+		"body": [
+			"/* description here.*/"
+			"class ${1} {",
+			"public:",
+			"\t${1}() {"
+			"\t\t// constructor.",
+			"\t\t// to complete snippet, press tab."
+			"\t}",
+			"\t",
+			"\t~${1}() {",
+			"\t\t// destructor.",
+			"\t}",
+			"};"
+		],
+		"description": "C++ Class"
+	},
+
+	"C-Style Callback Type": {
+		"prefix": "c_callback",
+		"body": [
+			"/* description here.*/",
+			"typedef void (*${1})(void);"
+		]
+	},
+
+	"NASM Default Form": {
+		"prefix": "nasm",
+		"body": [
+			"section .text",
+			"code_here:"
+			"\t; blahblah..."
+		],
+		"description": "NASM Default Format"
+	}
+}

@@ -1,8 +1,16 @@
 section .kstack
+global _karch_tss0_stack
+
+; max cpu. --> defined at `include/zeronix/arch/x86/layout.h
+MAX_CPU			equ	16
+
+; i686 machine's page size.
+I686_PAGE_SIZE	equ 4096	
+
 _karch_stack_head:
-	resb 16384	; 1K stack to call `kboot` function.
+	resb 2048			; 2K stack to call `karch_init` function.
 _karch_stack_tail:
-	resb 16384
+	resb (I686_PAGE_SIZE * MAX_CPU)
 _karch_tss0_stack:
 
 ;=======================================================================

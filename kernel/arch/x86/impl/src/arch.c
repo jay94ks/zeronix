@@ -15,6 +15,9 @@
 #include "smp/acpi.h"
 
 // --
+extern void* _karch_tss0_stack;
+
+// --
 kbootinfo_t kinfo;
 
 // --
@@ -38,6 +41,15 @@ void karch_init(kbootinfo_t* info) {
     }
 
     // --> init SMP.
+}
+
+uint8_t* karch_stacktop_for(uint8_t cpu) {
+    if (cpu >= MAX_CPU) {
+        return 0;
+    }
+
+    uint8_t* top = (uint8_t*) &_karch_tss0_stack;
+    return top - (I686_PAGE_SIZE * cpu);
 }
 
 /**

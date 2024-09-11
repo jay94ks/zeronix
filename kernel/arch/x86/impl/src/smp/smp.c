@@ -52,10 +52,6 @@ uint8_t karch_init_smp() {
     return 1;
 }
 
-uint8_t karch_smp_supported() {
-    return smp_cpu > 1;
-}
-
 /**
  * this finds all CPU in system using ACPI.
  */
@@ -76,4 +72,16 @@ void karch_smp_discover_cpu() {
         smp_a2c[now->apic] = cpu_id;
         smp_c2a[cpu_id] = now->apic;
     }
+}
+
+uint8_t karch_smp_supported() {
+    return smp_cpu > 1;
+}
+
+uint8_t karch_smp_cpu_id() {
+    if (smp_cpu <= 1) {
+        return 0;
+    }
+
+    return smp_a2c[karch_lapic_id()];
 }

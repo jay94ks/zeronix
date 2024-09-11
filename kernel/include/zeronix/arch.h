@@ -9,5 +9,5 @@
 #include "arch/x86/types.h"
 #include "arch/x86/cpuinfo.h"
 #include "arch/x86/klib.h"
-#include "arch/x86/acpi.h"
+#include "arch/x86/init.h"
 #endif
