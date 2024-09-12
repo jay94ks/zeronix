@@ -9,6 +9,7 @@
 #include <zeronix/kcrt/string.h>
 #include <zeronix/arch/x86/cpuinfo.h>
 #include <zeronix/arch/x86/layout.h>
+#include <zeronix/arch/x86/klib.h>
 #include <zeronix/arch/x86/cpu.h>
 
 // --
@@ -18,8 +19,12 @@ uint8_t smp_avail;
 // --> post init LAPIC parameters: defined at apic.c.
 extern void karch_apic_set_bsp(uint8_t cpu_id, uint8_t lapic_id);
 
+// --> defined in `head.asm`, this must be passed to `jmp` instruction.
+extern void jump_to_kmain();
+
 // --
 void karch_smp_map_apic_id();
+void karch_smp_start_ap();
 
 // --
 uint8_t karch_init_smp() {
@@ -30,6 +35,7 @@ uint8_t karch_init_smp() {
         return 0;
     }
 
+    karch_emergency_print("SMP: init...");
     karch_smp_map_apic_id();
     uint8_t n = karch_count_cpu();
 
@@ -54,31 +60,27 @@ uint8_t karch_init_smp() {
         karch_apic_set_bsp(0, 0);
         karch_set_count_cpu(1);
 
+        karch_deinit_apic_idt();
         return 0;
     }
 
+    // --> get BSP cpu info.
+    karch_cpu_t* bsp = karch_get_cpu(bsp_cpu);
+    
     // --> disable i8259 icmr.
     //   : this will enable IOAPIC all.
     karch_i8259_imcr_disable();
 
-    // TODO: APIC idt init.
-    // TODO: IDT reload.
-
+    // --> load APIC's IDT to IDT table.
     karch_init_apic_idt();
 
-    
-    /***
-     * 
-	apic_idt_init(0);
-	idt_reload();
+    // --> then, flush IDT table to CPU.
+    karch_flush_idt();
 
-	BOOT_VERBOSE(printf("SMP initialized\n"));
+    // --> switch kernel stack to.
+    switch_stack(bsp->stackmark, karch_smp_start_ap);
 
-	switch_k_stack((char *)get_k_stack_top(bsp_cpu_id) -
-			X86_STACK_TOP_RESERVED, smp_start_aps);
-    */
-
-    // TODO: start aps here.
+    // --> can not reach here.
     return 1;
 }
 
@@ -127,4 +129,14 @@ uint8_t karch_smp_cpuid_current() {
     }
 
     return karch_smp_cpuid(karch_lapic_id());
+}
+
+/**
+ * start all APs in CPU.
+ */
+void karch_smp_start_ap() {
+    karch_emergency_print("SMP: starting APs...");
+
+    // TODO: run kmain on BSP.
+    while(1);
 }

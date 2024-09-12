@@ -16,6 +16,10 @@ void karch_init_idt() {
     desc_idt.limit = sizeof(idt) - 1;
 }
 
+void karch_reset_idt() {
+    kmemset(idt, 0, sizeof(idt));
+}
+
 void karch_flush_idt() {
     load_idt(&desc_idt);
 }

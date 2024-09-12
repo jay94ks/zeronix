@@ -3,6 +3,7 @@
 #include "apic.h"
 #include "acpi.h"
 #include "../min86/idt.h"
+#include "../min86/i8259.h"
 #include "../min86/except.h"
 
 #include <zeronix/kcrt/string.h>
@@ -200,11 +201,20 @@ void karch_init_apic_idt() {
 	if (is_bsp) {
         karch_load_idt_gatevec(gv_apic_bsp, 0x00);
 	}
-
 }
 
 void karch_deinit_apic_idt() {
+    // --> reset IDT.
+    karch_reset_idt();
+    
+    // --> then, load min86's PIC interrupt vectors.
+    karch_reload_i8259_min86();
 
+    // --> flush IDT table.
+    karch_flush_idt();
+
+    // --> then, re-enable ICMR of i8259.
+    karch_i8259_icmr_enable();
 }
 
 /**

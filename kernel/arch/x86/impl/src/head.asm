@@ -19,6 +19,7 @@ _karch_tss0_stack:
 
 section .text
 global __karch_init
+global jump_to_kmain
 global _karch_tss0_stack
 
 extern kmain
@@ -38,7 +39,9 @@ __karch_init:
     push eax
 
     call karch_init
+	jmp jump_to_kmain
 
+jump_to_kmain:
     ; then, invoke all initializers.
 	mov ebx, _kinit_head
 	jmp .p2

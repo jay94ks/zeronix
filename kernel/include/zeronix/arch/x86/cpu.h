@@ -44,6 +44,13 @@ extern "C" {
 #endif
 
 /**
+ * emergency print message.
+ * this is only usable until kernel initialization process.
+ * from `karch_init()` to `karch_init_smp` including `karch_smp_start_ap`).
+ */
+void karch_emergency_print(const char* msg);
+
+/**
  * get the kernel stack for specified cpu.
  * this can be called at anywhere.
  * this defined at arch/x86/impl/src/arch.c

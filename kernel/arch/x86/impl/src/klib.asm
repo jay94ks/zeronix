@@ -56,6 +56,7 @@ global cpu_out32;
 
 global cpu_cmpxchg32;
 global cpu_read_tsc;
+global switch_stack;
 
 read_cr0:
     push ebp
@@ -280,6 +281,17 @@ load_gs:
 
 load_ss:
     load_seg ss
+
+switch_stack:
+    mov eax, [esp + 8];
+    mov ecx, [esp + 4];
+
+    mov ebp, .not_reachable
+    mov esp, ecx
+    jmp eax
+    
+    .not_reachable:
+        jmp .not_reachable
 
 cpu_hlt:
     hlt

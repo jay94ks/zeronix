@@ -28,9 +28,9 @@ kbootinfo_t kinfo;
 karch_cpu_t cpus[MAX_CPU] __aligned(8);
 uint8_t cpu_n, mode_min86;
 
-
 // --
 void karch_early_init();
+
 
 /**
  * arch-specific initialization. 
@@ -48,15 +48,23 @@ void karch_init(kbootinfo_t* info) {
     
     // --> initialize ACPI.
     if (karch_init_acpi() == 0 ||
-        karch_init_apic() == 0 ||
-        karch_init_smp() == 0)
+        karch_init_apic() == 0)
     {
         // --> working as min86 mode.
         return;
     }
 
+    if (karch_init_smp() != 0) {
+        cpu_cli();
+
+        // kernel panic: unreachable if SMP successfully initialized.
+        karch_emergency_print(
+            "fatal: the CPU reached to impossible point in SMP initialization.");
+            
+        while(1);
+    }
+
     mode_min86 = 1;
-    // --> init SMP.
 }
 
 /**
@@ -93,6 +101,18 @@ void karch_early_init() {
     // --> re-initialize early paging.
     //   : after this call, bootstrap code is not needed anymore.
     karch_init_page(&kinfo);
+}
+
+void karch_emergency_print(const char* msg) {
+    uint16_t* vba = (uint16_t*) 0xb8000;
+    const char* msg_ = msg;
+
+    while(*msg_) {
+        *vba++ = (*msg_++) | (15 << 8);
+    }
+
+    *vba++ = '.' | (15 << 8);
+    *vba++ = (15 << 8);
 }
 
 uint8_t* karch_stacktop_for(uint8_t cpu) {

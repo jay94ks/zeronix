@@ -33,6 +33,8 @@ extern void load_fs(uint32_t ds);
 extern void load_gs(uint32_t ds);
 extern void load_ss(uint32_t ds);
 
+extern void switch_stack(void* esp, void (* continuation)(void));
+
 extern void cpu_hlt();
 extern void cpu_cli();
 extern void cpu_sti();

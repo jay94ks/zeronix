@@ -89,6 +89,11 @@ void karch_init_i8259() {
     karch_program_i8259();
 }
 
+void karch_reload_i8259_min86() {
+    karch_load_idt_gatevec(gv_i8259_master, GATEVEC_PIC_MASTER);
+    karch_load_idt_gatevec(gv_i8259_slave, GATEVEC_PIC_SLAVE);
+}
+
 void karch_program_i8259() {
     cpu_out8(i8259_INT_CTL, ICW1_AT);
     cpu_out8(i8259_INT_CTLMASK, GATEVEC_PIC_MASTER);

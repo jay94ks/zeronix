@@ -62,6 +62,16 @@ typedef void (*karch_i8259_cb_t)(const i8259_t* i8259);
 void karch_init_i8259();
 
 /**
+ * reload i8259 interrupt vector table to run only min86.
+ * this does not reset full IDT. 
+ * ----
+ * to full reset and reload:
+ *  karch_reset_idt();
+ *  karch_reload_i8259_min86();
+ */
+void karch_reload_i8259_min86();
+
+/**
  * unmask the specified irq line.
  */
 void karch_unmask_i8259(uint8_t irq);

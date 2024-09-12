@@ -25,6 +25,11 @@ struct gatevec {
 void karch_init_idt();
 
 /**
+ * clear all interrupt vector to `not-mapped`.
+*/
+void karch_reset_idt();
+
+/**
  * flush current IDT entries to the CPU.
  */
 void karch_flush_idt();

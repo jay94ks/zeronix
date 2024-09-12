@@ -12,7 +12,8 @@
 void karch_init_apic_idt();
 
 /**
- * de-initialize APIC's IDT. 
+ * de-initialize APIC's IDT.
+ * this restores min86's PIC interrupt vectors.
  */
 void karch_deinit_apic_idt();
 
