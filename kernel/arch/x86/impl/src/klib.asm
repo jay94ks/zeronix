@@ -54,6 +54,9 @@ global cpu_out8;
 global cpu_out16;
 global cpu_out32;
 
+global cpu_cmpxchg32;
+global cpu_read_tsc;
+
 read_cr0:
     push ebp
     mov ebp, esp
@@ -383,4 +386,50 @@ cpu_out32:
     pop edx
     mov esp, ebp
     pop ebp
+    ret
+
+cpu_cmpxchg32:
+    push ebp
+    mov ebp, esp
+    
+    push edi
+    push edx
+
+    ; [ebp + 8] : ptr.
+    ; [ebp + 12]: exp.
+    ; [ebp + 16]: val.
+
+    mov eax, [ebp + 12]
+    mov edi, [ebp + 8]
+    mov edx, [ebp + 16]
+
+    cmpxchg [edi], edx
+    
+    ; eax = result: exp / val.
+
+    pop edx
+    pop edi
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+cpu_read_tsc:
+    push edx
+    push eax
+
+    db 0x0f
+    db 0x31
+
+    push ebp
+
+    mov ebp, [esp + 16]
+    mov [ebp], edx
+
+    mov ebp, [esp + 20]
+    mov [ebp], eax
+    
+    pop ebp
+    pop eax
+    pop edx
     ret

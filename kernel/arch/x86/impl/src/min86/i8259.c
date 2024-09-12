@@ -165,7 +165,7 @@ uint8_t karch_set_hwint_i8259(uint8_t n, karch_i8259_cb_t cb, void* data) {
 
 void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
     if (i8259_cb[n]) {
-        i8256_t e;
+        i8259_t e;
 
         e.n = n;
         e.k = k;

@@ -46,6 +46,10 @@ extern void cpu_out8(uint32_t port, uint32_t data);
 extern void cpu_out16(uint32_t port, uint32_t data);
 extern void cpu_out32(uint32_t port, uint32_t data);
 
+// --> windows interlocked style cmpxchg.
+extern uint32_t cpu_cmpxchg32(uint32_t* ptr, uint32_t exp, uint32_t val); 
+extern void cpu_read_tsc(uint32_t* hi, uint32_t* lo);
+
 #ifdef __cplusplus
 }
 #endif

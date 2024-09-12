@@ -27,6 +27,15 @@ uint32_t karch_ioapic_read(uint32_t iobase, uint32_t reg);
  * write an ioapic register.
  */
 void karch_ioapic_write(uint32_t iobase, uint32_t reg, uint32_t val);
+/**
+ * enable pin.
+ */
+uint32_t karch_ioapic_enable_pin(uint32_t ioapic_addr, uint32_t pin);
+
+/**
+ * disable pin.
+ */
+uint32_t karch_ioapic_disable_pin(uint32_t ioapic_addr, uint32_t pin);
 
 /**
  * read an lapic register.
@@ -39,13 +48,18 @@ uint32_t karch_lapic_read(uint32_t iobase);
 void karch_lapic_write(uint32_t iobase, uint32_t val);
 
 /**
- * enable pin.
+ * get the lapic error number.
  */
-uint32_t karch_ioapic_enable_pin(uint32_t ioapic_addr, uint32_t pin);
+uint32_t karch_lapic_error();
 
 /**
- * disable pin.
+ * signal the end of interrupt handler to apic.
  */
-uint32_t karch_ioapic_disable_pin(uint32_t ioapic_addr, uint32_t pin);
+uint8_t karch_lapic_eoi();
+
+/**
+ * enable the specified CPU's LAPIC.
+ */
+uint8_t karch_lapic_enable(uint8_t cpu);
 
 #endif

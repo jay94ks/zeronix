@@ -24,7 +24,7 @@ enum {
     I8259_COM13 = 4,
     I8259_LPT2 = 5,
     I8259_FLOPPY = 6,
-    I8259_LPT1 = 7,
+    I8259_LPT1 = 7, // --> unreliable "spurious" (from OS dev, https://wiki.osdev.org/Interrupts)
     I8259_RTC = 8,
     I8259_MOUSE = 12,
     I8259_MATH = 13,
@@ -46,12 +46,12 @@ typedef struct {
     uint32_t k;
     karch_intr_frame_t* frame;
     void* data;
-} i8256_t;
+} i8259_t;
 
 /**
  * A callback type to pass interrupt execution to other.
  */
-typedef void (*karch_i8259_cb_t)(const i8256_t* i8259);
+typedef void (*karch_i8259_cb_t)(const i8259_t* i8259);
 
 /**
  * initialize i8259, but this does not enable i8259.

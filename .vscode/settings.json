@@ -11,6 +11,10 @@
         "layout.h": "c",
         "string.h": "c",
         "klib.h": "c",
-        "acpi.h": "c"
+        "acpi.h": "c",
+        "spinlock.h": "c",
+        "except.h": "c",
+        "cpu.h": "c",
+        "init.h": "c"
     }
 }

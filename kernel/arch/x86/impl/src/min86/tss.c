@@ -4,11 +4,9 @@
 #include <zeronix/kcrt/string.h>
 #include <zeronix/arch/x86/layout.h>
 #include <zeronix/arch/x86/cpuinfo.h>
-#include <zeronix/arch/x86/init.h>
+#include <zeronix/arch/x86/cpu.h>
 
 // --
-karch_tss_t tss[MAX_CPU] __aligned(8);
-karch_stackmark_t* stackmark[MAX_CPU] __aligned(8);
 uint8_t syscall_impl = 0;
 
 enum {
@@ -17,10 +15,7 @@ enum {
 };
 
 void karch_init_tss() {
-    kmemset(tss, 0, sizeof(tss));
-    kmemset(stackmark, 0, sizeof(stackmark));
     syscall_impl = 0;
-
     syscall_impl |= kcpuinfo(KCPUF_SYSENTER)? USE_SYSENTER : 0;
     syscall_impl |= kcpuinfo(KCPUF_SYSCALL) ? USE_SYSCALL : 0;
 
@@ -28,16 +23,10 @@ void karch_init_tss() {
     karch_setup_tss(0, karch_stacktop_for(0));
 }
 
-karch_tss_t* karch_get_tss(uint8_t n) {
-    if (n >= MAX_CPU) {
-        return 0;
-    }
-
-    return &tss[n];
-}
-
 uint8_t karch_setup_tss(uint8_t cpu, void* stack_top) {
-    karch_tss_t* tss = karch_get_tss(cpu);
+    karch_cpu_t* cpu_ = karch_get_cpu(cpu);
+
+    karch_tss_t* tss = &cpu_->tss;
     karch_seg_t* seg = karch_get_gdt(GDT_TSS_INDEX(cpu));
 
     if (!seg || !stack_top) {
@@ -54,7 +43,9 @@ uint8_t karch_setup_tss(uint8_t cpu, void* stack_top) {
     tss->ds = tss->es = tss->fs = tss->gs = tss->ss0 = GDT_KERN_DS;
     tss->cs = GDT_KERN_CS;
     tss->iobase = sizeof(karch_tss_t);
-    tss->sp0 = (uint32_t)(stackmark[cpu] = sm);
+    
+    tss->sp0 = (uint32_t)(cpu_->stackmark = sm);
+    cpu_->flags |= CPUFLAG_INIT_TSS;
 
     sm->cpu = cpu;
     sm->proc = 0;

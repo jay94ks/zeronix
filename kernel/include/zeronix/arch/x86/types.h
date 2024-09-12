@@ -43,7 +43,6 @@ typedef struct karch_x86_gate_t karch_gate_t;
 typedef struct karch_x86_seg_t karch_seg_t;
 
 /* meaningful aliases. */
-typedef uint32_t karch_atom_t;
 typedef uint32_t karch_reg32_t;
 typedef uint32_t karch_reg16_t;
 
