@@ -8,7 +8,7 @@
  * Flags for karch_cpu_t.
  */
 enum {
-    CPUFLAG_INIT_ITSELF = 1,
+    CPUFLAG_INIT_BSP = 1,           // --> is_bsp flag is usable or not.
     CPUFLAG_INIT_LAPIC = 2,         // --> apic_id is available or not.
     CPUFLAG_INIT_LAPIC_FREQ = 4,    // --> lapic frequency.
     CPUFLAG_INIT_FREQ = 8,          // --> frequency.
@@ -25,10 +25,12 @@ enum {
  * lapic_freq, freq: assigned from `karch_lapic_calibrate_clocks` at `arch/x86/smp/apic.c`.
  */
 typedef struct {
-    uint8_t             flags;          // --> flags
+    uint16_t            flags;          // --> flags
+    uint8_t             is_bsp;         // --> indicates whether the CPI is BSP or not.
     uint8_t             apic_id;        // --> apic id.
     uint32_t            freq;           // --> CPU frequency.
     uint32_t            lapic_freq;     // --> LAPIC bus frequency.
+    uint32_t            pad;
     karch_tss_t         tss;            // --> task segment.
     karch_stackmark_t*  stackmark;      // --> stack mark.
 } karch_cpu_t;
@@ -61,6 +63,21 @@ uint8_t karch_count_cpu();
  * if no CPU available, this returns null.
  */
 karch_cpu_t* karch_get_cpu(uint8_t n);
+
+/**
+ * indicates whether the CPU is BSP or not.
+ * 1) min86 mode or SMP not supported: n == 0 --> 1.
+ * 2) BSP initialized: cpus[n].is_bsp.
+ * 3) otherwise: always zero.
+ */
+uint8_t karch_is_bsp(uint8_t n);
+
+/**
+ * indicates whether the current CPU is BSP or not.
+ * 1) min86 mode or SMP not supported: always non-zero.
+ * 2) result of `karch_is_bsp( karch_smp_cpuid_current() )`.
+ */
+uint8_t karch_is_bsp_cpu_current();
 
 #ifdef __ARCH_X86_INTERNALS__
 

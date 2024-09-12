@@ -201,7 +201,7 @@ void karch_i8259_imcr_disable() {
 
 void karch_i8259_icmr_enable() {
     if (i8259_imcr == 0) {
-        outb(i8259_IMCR1, 0x70);
-        outb(i8259_IMCR2, 0x00);
+        cpu_out8(i8259_IMCR1, 0x70);
+        cpu_out8(i8259_IMCR2, 0x00);
     }
 }

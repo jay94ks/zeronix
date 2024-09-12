@@ -1,7 +1,9 @@
-#define __ARCH_X86_INTERNALS__
+#define __ARCH_X86_INTERNALS__  1
 
 #include "apic.h"
+#include "apic_idt.h"
 #include "acpi.h"
+#include "smp.h"
 #include "../min86/tss.h"
 
 #include <zeronix/kcrt/string.h>
@@ -12,7 +14,6 @@
 // --
 static uint8_t smp_a2c[255];    // --> APIC ID -> CPU ID.
 uint8_t smp_avail;
-
 
 // --> post init LAPIC parameters: defined at apic.c.
 extern void karch_apic_set_bsp(uint8_t cpu_id, uint8_t lapic_id);
@@ -42,11 +43,17 @@ uint8_t karch_init_smp() {
     uint8_t bsp_cpu = smp_a2c[apic_id];
     karch_apic_set_bsp(bsp_cpu, apic_id);
 
+    // --> set SMP available.
+    smp_avail = 1;
+
     // --> enable LAPIC of BSP CPU.
     if (!karch_lapic_enable(bsp_cpu)) {
+        smp_avail = 0;
+
         // TODO: rollback.
         karch_apic_set_bsp(0, 0);
         karch_set_count_cpu(1);
+
         return 0;
     }
 
@@ -57,6 +64,9 @@ uint8_t karch_init_smp() {
     // TODO: APIC idt init.
     // TODO: IDT reload.
 
+    karch_init_apic_idt();
+
+    
     /***
      * 
 	apic_idt_init(0);
@@ -103,10 +113,18 @@ uint8_t karch_smp_supported() {
     return smp_avail;
 }
 
-uint8_t karch_smp_cpu_id() {
+uint8_t karch_smp_cpuid(uint8_t lapic_id) {
     if (karch_count_cpu() <= 1) {
         return 0;
     }
 
-    return smp_a2c[karch_lapic_id()];
+    return smp_a2c[lapic_id];
+}
+
+uint8_t karch_smp_cpuid_current() {
+    if (karch_count_cpu() <= 1) {
+        return 0;
+    }
+
+    return karch_smp_cpuid(karch_lapic_id());
 }

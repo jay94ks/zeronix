@@ -70,6 +70,8 @@ uint8_t karch_init_apic() {
     lapic_info.eoi_addr = LAPIC_EOI;
     lapic_info.bsp_cpu_id = 0;
     lapic_info.bsp_lapic_id = 0;
+
+
     return 1;
 }
 
@@ -79,6 +81,13 @@ uint8_t karch_init_apic() {
 void karch_apic_set_bsp(uint8_t cpu_id, uint8_t lapic_id) {
     lapic_info.bsp_cpu_id = cpu_id;
     lapic_info.bsp_lapic_id = lapic_id;
+
+    // --
+    karch_cpu_t* cpu = karch_get_cpu(cpu_id);
+    if (cpu) {
+        cpu->is_bsp = 1;
+        cpu->flags |= CPUFLAG_INIT_BSP;
+    }
 }
 
 uint8_t karch_apic_supported() {
