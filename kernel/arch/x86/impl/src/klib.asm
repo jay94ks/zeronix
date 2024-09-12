@@ -405,7 +405,7 @@ cpu_cmpxchg32:
 
     cmpxchg [edi], edx
     
-    ; eax = result: exp / val.
+    ; eax = result: exp or val.
 
     pop edx
     pop edi

@@ -27,10 +27,10 @@ debug:
 	$(MAKE) debug-2nd
 	
 debug-2nd: $(KERNEL_IMAGE)
-	qemu-system-i386 -m 256M -kernel $(KERNEL_IMAGE) -s -S
+	qemu-system-i386 -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE) -s -S
 
 run: $(KERNEL_IMAGE)
-	qemu-system-i386 -m 256M -kernel $(KERNEL_IMAGE)
+	qemu-system-i386 -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE)
 
 clean:
 	@find . -type f -name "*.o" -exec rm {} \;
