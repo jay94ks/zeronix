@@ -87,4 +87,15 @@ uint8_t karch_get_hwint_i8259(uint8_t n, karch_i8259_cb_t* cb, void** data);
  * returns non-zero if success.
  */
 uint8_t karch_set_hwint_i8259(uint8_t n, karch_i8259_cb_t cb, void* data);
+
+/**
+ * disconnect i8259 from system.
+ */
+void karch_i8259_imcr_disable();
+
+/**
+ * re-connect i8259 into system.
+ */
+void karch_i8259_icmr_enable();
+
 #endif

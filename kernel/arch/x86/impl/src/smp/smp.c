@@ -46,14 +46,27 @@ uint8_t karch_init_smp() {
     if (!karch_lapic_enable(bsp_cpu)) {
         // TODO: rollback.
         karch_apic_set_bsp(0, 0);
+        karch_set_count_cpu(1);
         return 0;
     }
 
-    // --> here, IOAPIC information already detected.
+    // --> disable i8259 icmr.
+    //   : this will enable IOAPIC all.
+    karch_i8259_imcr_disable();
 
-    // TODO: enable IOAPIC ALL.
     // TODO: APIC idt init.
     // TODO: IDT reload.
+
+    /***
+     * 
+	apic_idt_init(0);
+	idt_reload();
+
+	BOOT_VERBOSE(printf("SMP initialized\n"));
+
+	switch_k_stack((char *)get_k_stack_top(bsp_cpu_id) -
+			X86_STACK_TOP_RESERVED, smp_start_aps);
+    */
 
     // TODO: start aps here.
     return 1;

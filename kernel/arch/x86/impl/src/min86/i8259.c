@@ -52,6 +52,7 @@ static const struct gatevec gv_i8259_slave[] = {
 // --
 karch_i8259_cb_t i8259_cb[16];
 void* i8259_cb_data[16];
+uint8_t i8259_imcr;
 
 // --
 
@@ -69,6 +70,9 @@ void* i8259_cb_data[16];
 #define ICW4_PC_AEOI_MASTER     0x0F    /* not SFNM, buffered, auto EOI, 8086 */
 #define i8259_CTLMASK(irq)      ((irq) < 8 ? i8259_INT_CTLMASK : i8259_INT2_CTLMASK)
 
+#define i8259_IMCR1             0x22
+#define i8259_IMCR2             0x23
+
 // --
 void karch_program_i8259();
 
@@ -76,6 +80,7 @@ void karch_program_i8259();
 void karch_init_i8259() {
     kmemset(i8259_cb, 0, sizeof(i8259_cb));
     kmemset(i8259_cb_data, 0, sizeof(i8259_cb_data));
+    i8259_imcr = 1; // --> enabled initially.
 
     karch_load_idt_gatevec(gv_i8259_master, GATEVEC_PIC_MASTER);
     karch_load_idt_gatevec(gv_i8259_slave, GATEVEC_PIC_SLAVE);
@@ -180,5 +185,23 @@ void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
 
     if (!k) {
         // --> switch to user if possible.
+    }
+}
+
+void karch_i8259_imcr_disable() {
+    karch_disable_i8259();
+
+    // --> disconnect i8259.
+    if (0 && i8259_imcr != 0) {
+        i8259_imcr = 0;
+        cpu_out8(i8259_IMCR1, 0x70);
+        cpu_out8(i8259_IMCR2, 0x01);
+    }
+}
+
+void karch_i8259_icmr_enable() {
+    if (i8259_imcr == 0) {
+        outb(i8259_IMCR1, 0x70);
+        outb(i8259_IMCR2, 0x00);
     }
 }
