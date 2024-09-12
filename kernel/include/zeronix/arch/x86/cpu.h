@@ -4,6 +4,9 @@
 #include <zeronix/types.h>
 #include <zeronix/arch/x86/types.h>
 
+/* CPU local variable type. */
+typedef struct { uint8_t _; } *karch_cpuvar_t;
+
 /**
  * Flags for karch_cpu_t.
  */
@@ -13,6 +16,23 @@ enum {
     CPUFLAG_INIT_LAPIC_FREQ = 4,    // --> lapic frequency.
     CPUFLAG_INIT_FREQ = 8,          // --> frequency.
     CPUFLAG_INIT_TSS = 16,          // --> tss and stackmark is set or not.
+    CPUFLAG_INIT_SMP_MODE = 32,     // --> smp_mode is available or not.
+};
+
+/**
+ * Modes for `smp_mode`.
+ */
+enum {
+    CPUSMPF_NOT_SMP = 0,
+    CPUSMPF_BSP,                    // --> the CPU initialized as BSP.
+    CPUSMPF_NOT_BSP                 // --> the CPU is not BSP.
+};
+
+enum {
+    CPUVARS_ZERO = 0,
+
+    __CPUVARS_MAX,
+    CPUVARS_MAX = __CPUVARS_MAX
 };
 
 /**
@@ -25,14 +45,16 @@ enum {
  * lapic_freq, freq: assigned from `karch_lapic_calibrate_clocks` at `arch/x86/smp/apic.c`.
  */
 typedef struct {
-    uint16_t            flags;          // --> flags
-    uint8_t             is_bsp;         // --> indicates whether the CPI is BSP or not.
-    uint8_t             apic_id;        // --> apic id.
-    uint32_t            freq;           // --> CPU frequency.
-    uint32_t            lapic_freq;     // --> LAPIC bus frequency.
-    uint32_t            pad;
-    karch_tss_t         tss;            // --> task segment.
-    karch_stackmark_t*  stackmark;      // --> stack mark.
+    uint16_t            flags;              // --> flags: CPUFLAG_INIT_*.
+    uint8_t             is_bsp;             // --> indicates whether the CPI is BSP or not.
+    uint8_t             apic_id;            // --> apic id.
+    uint32_t            freq;               // --> CPU frequency.
+    uint32_t            lapic_freq;         // --> LAPIC bus frequency.
+    uint8_t             smp_mode;           // --> SMP mode: one of CPUSMPF_*.
+    uint16_t            pad;
+    karch_tss_t         tss;                // --> task segment.
+    karch_stackmark_t*  stackmark;          // --> stack mark.
+    karch_cpuvar_t      vars[CPUVARS_MAX];  // --> CPU local variables.
 } karch_cpu_t;
 
 // --------------
@@ -85,6 +107,13 @@ uint8_t karch_is_bsp(uint8_t n);
  * 2) result of `karch_is_bsp( karch_smp_cpuid_current() )`.
  */
 uint8_t karch_is_bsp_cpu_current();
+
+/**
+ * get the current CPU struct.
+ * 1) min86 mode or SMP not supported: karch_get_cpu(0).
+ * 2) result of `karch_get_cpu( karch_smp_cpuid_current() )`
+ */
+karch_cpu_t* karch_get_cpu_current();
 
 #ifdef __ARCH_X86_INTERNALS__
 

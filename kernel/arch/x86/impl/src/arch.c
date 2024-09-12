@@ -24,13 +24,13 @@
 extern void* _karch_tss0_stack;
 
 // --
-kbootinfo_t kinfo;
+kbootinfo_t bootinfo;
 karch_cpu_t cpus[MAX_CPU] __aligned(8);
 uint8_t cpu_n, mode_min86;
 
 // --
 void karch_early_init();
-
+void karch_set_min86();
 
 /**
  * arch-specific initialization. 
@@ -38,19 +38,21 @@ void karch_early_init();
  * after the kernel is ready to enter SMP, it'll call `karch_smp_init()`.
  */
 void karch_init(kbootinfo_t* info) {
-    kmemcpy(&kinfo, info, sizeof(kinfo));
+    kmemcpy(&bootinfo, info, sizeof(bootinfo));
     kmemset(cpus, 0, sizeof(cpus));
     
     mode_min86 = 1;
     cpu_n = 1;
 
     karch_early_init();
-    
+    mode_min86 = 0;
+
     // --> initialize ACPI.
-    if (karch_init_acpi() == 0 ||
-        karch_init_apic() == 0)
+    if (karch_init_acpi() && karch_init_apic())
     {
         // --> working as min86 mode.
+        mode_min86 = 1;
+        karch_set_min86();
         return;
     }
 
@@ -60,11 +62,16 @@ void karch_init(kbootinfo_t* info) {
         // kernel panic: unreachable if SMP successfully initialized.
         karch_emergency_print(
             "fatal: the CPU reached to impossible point in SMP initialization.");
-            
+
         while(1);
     }
 
     mode_min86 = 1;
+    karch_set_min86();
+}
+
+kbootinfo_t* karch_get_bootinfo() {
+    return &bootinfo;
 }
 
 /**
@@ -100,7 +107,24 @@ void karch_early_init() {
 
     // --> re-initialize early paging.
     //   : after this call, bootstrap code is not needed anymore.
-    karch_init_page(&kinfo);
+    karch_init_page(&bootinfo);
+}
+
+void karch_set_min86() {
+    karch_cpu_t* bsp = karch_get_cpu_current();
+    if (!bsp) {
+        cpu_cli();
+
+        // kernel panic: unreachable if SMP successfully initialized.
+        karch_emergency_print(
+            "fatal: the kernel arch can not determines BSP for min86 mode.");
+
+        while(1);
+    }
+
+    // --> set SMP mode and flag.
+    bsp->smp_mode = CPUSMPF_NOT_SMP;
+    bsp->flags |= CPUFLAG_INIT_SMP_MODE;
 }
 
 void karch_emergency_print(const char* msg) {
@@ -168,4 +192,12 @@ uint8_t karch_is_bsp_cpu_current() {
 
     uint8_t smp_cpu = karch_smp_cpuid_current();
     return karch_is_bsp_cpu(smp_cpu);
+}
+
+karch_cpu_t* karch_get_cpu_current() {
+    if (mode_min86 || !karch_smp_supported()) {
+        return &cpus[0];
+    }
+
+    return karch_get_cpu(karch_smp_cpuid_current());
 }
