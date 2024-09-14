@@ -60,7 +60,7 @@ SECTIONS
 		*(COMMON)
 		*(.kstack)
 		*(.bss)
-		
+
 		_mb_size = . - _mb_virt_base;
 	}
     _mb_end = .;

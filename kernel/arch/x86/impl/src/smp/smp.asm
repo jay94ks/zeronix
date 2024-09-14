@@ -1,13 +1,18 @@
-section .text ; --> this code'll be placed at 0x004xxxxx.
+section .text_smp
 
 GDT_MAX     equ 22
+MAX_IDT     equ 256
 SEG_KERN_CS equ (1 * 8)
+SEG_KERN_DS equ (2 * 8)
 
 global smp_ap_entry;
+global __smp_ap_base;
 global __smp_ap_id;
 global __smp_ap_pt;
 global __smp_ap_gdt;
 global __smp_ap_idt;
+global __smp_ap_gdt_sys;
+global __smp_ap_idt_sys;
 global __smp_ap_gdt_tab;
 global __smp_ap_idt_tab;
 global __smp_entry_end;
@@ -15,37 +20,27 @@ global __smp_entry_end;
 extern karch_smp_init_ap32;
 
 align 4096
+
 smp_ap_entry:
+    bits 16
     cli
 
+    ; -------------- 16 bits addressing mode -----------------
     mov ax, cs
-    mov ds, ax
-
-    ; --> get absolute address (set by `karch_smp_start_ap`).
-    mov eax, __smp_ap_lower
-    mov ebx, [eax]
-
-    ; --> load gdt and idt prepared by bsp
-    mov eax, __smp_ap_gdt
-    sub eax, smp_ap_entry   ; --> convert as relative address.
-    add eax, ebx            ; --> convert to absolute address.
-    push eax     
+    mov ds, ax      ; 0x7000
     
-	lgdt	[esp + 4]
-    pop eax
-
-    ; --> get absolute address (set by `karch_smp_start_ap`).
-    mov eax, __smp_ap_lower
-    mov ebx, [eax]
-
-    ; --> load idt and idt prepared by bsp
-    mov eax, __smp_ap_idt
-    sub eax, smp_ap_entry   ; --> convert as relative address.
-    add eax, ebx            ; --> convert to absolute address.
-    push eax     
+    ; --> read temporary table descriptors.
+    nop
+    mov ax, (__smp_ap_gdt - smp_ap_entry)
+    nop
+    mov bx, (__smp_ap_idt - smp_ap_entry)
     
-	lidt	[esp + 4]
-    pop eax
+    ; --> load temporary tables.
+    mov di, ax
+	lgdt	[di]
+    
+    mov di, bx
+    lidt	[di]
 
     ; switch to protected mode.
     mov eax, cr0
@@ -55,26 +50,50 @@ smp_ap_entry:
     ; cr4 PSE on, cr4 PGE off
     mov eax, cr4
     or eax, 0x00000010
-    and eax, 0x00000080
+    and eax, ~0x00000080
     mov cr4, eax
 
+    ; -------------- 32 bits addressing mode -----------------
     ; load boot cr3 and turn PG, so CPU can see all memory.
-    mov eax, __smp_ap_pt
-    sub eax, smp_ap_entry
+    mov ax, [__smp_ap_pt - smp_ap_entry + 2]
+    shl eax, 16
+
+    mov ax, [__smp_ap_pt - smp_ap_entry]
     mov cr3, eax
 
     ; enable paging.
-    mov ecx, cr0
-    or ecx, 0x80000000
-    mov cr0, ecx
+    mov eax, cr0
+    or eax, 0x80000000
+    ; and eax, ~0x60000000
+    nop
+    mov cr0, eax
 
     ; turn on PGE.
     mov eax, cr4
     or eax, 0x00000080
     mov cr4, eax
 
+    ; --> read system table descriptors.
+    nop
+    mov ax, (__smp_ap_gdt_sys - smp_ap_entry)
+
+    nop
+    mov bx, (__smp_ap_idt_sys - smp_ap_entry)
+    
+    ; --> load 32-bit gdt and idt.
+    mov di, ax
+	lgdt	[di]
+    
+    mov di, bx
+    lidt	[di]
+
     ; jump to highly mapped kernel.
-    jmp SEG_KERN_CS:karch_smp_init_ap32
+
+    nop
+    jmp dword SEG_KERN_CS:karch_smp_startup_ap32
+    bits 32
+    
+    nop
 
 align 4
 __smp_ap_id:
@@ -88,11 +107,38 @@ __smp_ap_gdt:
     
 __smp_ap_idt:
     resb 8
+    
+__smp_ap_gdt_sys:
+    resb 8
+    
+__smp_ap_idt_sys:
+    resb 8
 
 __smp_ap_gdt_tab:
     resb (GDT_MAX * 8)
 
 __smp_ap_idt_tab:
-    resb (256 * 8)
+    resb (MAX_IDT * 8)
 
 __smp_entry_end:
+
+
+section .text
+extern _kstack_tail ; --> boot stack, defined at arch/x86/boot/src/head.asm.
+extern karch_load_segs
+extern karch_smp_boot_ap32
+
+karch_smp_startup_ap32:
+    mov ax, SEG_KERN_DS
+    mov ds, ax
+    mov ss, ax
+
+    mov esp, _kstack_tail
+
+    call karch_load_segs
+	jmp	karch_smp_boot_ap32
+
+    ; unreachable.
+    .hang:
+        hlt
+        jmp .hang

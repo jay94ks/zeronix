@@ -2,9 +2,12 @@
 
 #include "apic.h"
 #include "apic_idt.h"
+#include "apic_ipi.h"
 #include "acpi.h"
 #include "smp.h"
 #include "../min86/tss.h"
+#include "../min86/idt.h"
+#include "../min86/gdt.h"
 
 #include <zeronix/boot.h>
 #include <zeronix/kcrt/string.h>
@@ -17,6 +20,7 @@
 static uint8_t smp_a2c[255];    // --> APIC ID -> CPU ID.
 uint32_t smp_bios_rstv;         // --> bios reset vector.
 uint8_t smp_avail;
+int16_t smp_ap_probe;           // --> probe to detect AP's boot completion.
 
 // --
 #define BIOS_RESET_VECTOR_ADDR  0x467
@@ -24,6 +28,9 @@ uint8_t smp_avail;
 
 #define RTC_INDEX   0x70
 #define RTC_IO      0x71
+
+#define SMP_AP_ENTRY_COPY_ADDR  0x8000
+#define SMP_WAIT_CPU_MDELAY     (60 * 1000)
 
 // --> extern from ../arch.c.
 kbootinfo_t* karch_get_bootinfo();
@@ -38,6 +45,8 @@ extern void jump_to_kmain();
 void karch_smp_set_mode(uint8_t bsp_id);
 void karch_smp_map_apic_id();
 void karch_smp_start_ap();
+void karch_smp_init_ap32();
+void karch_smp_identify_cpu(uint8_t cpu_id);
 
 // -- symbols to put data for CPUs.
 extern void smp_ap_entry();         // --> AP entry.
@@ -45,14 +54,19 @@ extern void* __smp_ap_id;           // --> CPU ID
 extern void* __smp_ap_pt;           // --> PAGE TABLE
 extern void* __smp_ap_gdt;          // --> GDT descriptor
 extern void* __smp_ap_idt;          // --> IDT descriptor  
+extern void* __smp_ap_gdt_sys;      // --> GDT descriptor
+extern void* __smp_ap_idt_sys;      // --> IDT descriptor  
 extern void* __smp_ap_gdt_tab;      // --> GDT table.
 extern void* __smp_ap_idt_tab;      // --> IDT table.
 extern void* __smp_entry_end;       // --> end of SMP entry.
 
+#define smp_ap_base     *((volatile uint32_t*) &__smp_ap_base)
 #define smp_ap_id       *((volatile uint32_t*) &__smp_ap_id)
 #define smp_ap_pt       *((volatile uint32_t*) &__smp_ap_pt)
 #define smp_ap_gdt       (*((karch_desc_t*) &__smp_ap_gdt))
 #define smp_ap_idt       (*((karch_desc_t*) &__smp_ap_idt))
+#define smp_ap_gdt_sys   (*((karch_desc_t*) &__smp_ap_gdt_sys))
+#define smp_ap_idt_sys   (*((karch_desc_t*) &__smp_ap_idt_sys))
 #define smp_ap_gdt_tab   (*((karch_seg_t*) &__smp_ap_gdt_tab))
 #define smp_ap_idt_tab   (*((karch_gate_t*) &__smp_ap_idt_tab))
 #define smp_ap_entry_beg ((uint32_t) &smp_ap_entry)
@@ -230,38 +244,33 @@ uint32_t karch_smp_find_lowmem(uint32_t len) {
  */
 uint32_t karch_smp_prepare_ap_entry() {
     uint32_t size = smp_ap_entry_end - smp_ap_entry_beg;
-    uint32_t lowmem = karch_smp_find_lowmem(size);
+    uint32_t lowmem = SMP_AP_ENTRY_COPY_ADDR; //karch_smp_find_lowmem(size);
 
     // --> address must be in 1MB.
     if (lowmem + size >= 0x00100000u) {
         return 0xffffffffu;
     }
 
-#define smp_ap_id       *((volatile uint32_t*) &__smp_ap_id)
-#define smp_ap_pt       *((volatile uint32_t*) &__smp_ap_pt)
-#define smp_ap_gdt       (*((karch_desc_t*) &__smp_ap_gdt))
-#define smp_ap_idt       (*((karch_desc_t*) &__smp_ap_idt))
-#define smp_ap_gdt_tab   (*((karch_seg_t*) &__smp_ap_gdt_tab))
-#define smp_ap_idt_tab   (*((karch_gate_t*) &__smp_ap_idt_tab))
-#define smp_ap_entry_beg ((uint32_t) &smp_ap_entry)
-#define smp_ap_entry_end ((uint32_t) &__smp_entry_end)
-    /**
-     * 
-	memcpy(&__ap_gdt_tab, gdt, sizeof(gdt));
-	memcpy(&__ap_idt_tab, gdt, sizeof(idt));
-	__ap_gdt.base = ap_lin_addr(&__ap_gdt_tab);
-	__ap_gdt.limit = sizeof(gdt)-1;
-	__ap_idt.base = ap_lin_addr(&__ap_idt_tab);
-	__ap_idt.limit = sizeof(idt)-1;
-    */
+    karch_desc_t* idt = karch_get_idt_ptr();
+    karch_desc_t* gdt = karch_get_gdt_ptr();
+    kbootinfo_t* boot = karch_get_bootinfo();
 
-   smp_ap_lower = lowmem;
+    smp_ap_id = 0;
+    smp_ap_pt = (uint32_t) boot->pagedir; // --> share BSP's page table.
+    smp_ap_gdt.base = (((uint32_t*)&smp_ap_gdt_tab) - ((uint32_t) &smp_ap_entry)) + lowmem;
+    smp_ap_gdt.limit = gdt->limit;
+    smp_ap_idt.base = (((uint32_t*)&smp_ap_idt_tab) - ((uint32_t) &smp_ap_entry)) + lowmem;
+    smp_ap_idt.limit = idt->limit;
 
-   //smp_ap_gdt
-    
+    smp_ap_gdt_sys = *gdt;
+    smp_ap_idt_sys = *idt;
+
+    kmemcpy(&smp_ap_idt_tab, (uint8_t*)idt->base, idt->limit + 1);
+    kmemcpy(&smp_ap_gdt_tab, (uint8_t*)gdt->base, gdt->limit + 1);
+
     // --> copy ap entry fn itself.
     uint32_t copy_size = smp_ap_entry_end - smp_ap_entry_beg;
-    kmemcpy((void*) lowmem, smp_ap_entry, size);
+    kmemcpy((void*) lowmem, &smp_ap_entry, copy_size);
 
     return lowmem;
 }
@@ -271,8 +280,10 @@ uint32_t karch_smp_prepare_ap_entry() {
  */
 void karch_smp_start_ap() {
     karch_emergency_print("SMP: starting APs...");
+    uint8_t cpu_n = karch_count_cpu();
+    uint8_t bsp_id = karch_smp_cpuid_current();
 
-    // --> copy bios reset vector.
+    // --> backup bios reset vector.
     smp_bios_rstv = BIOS_RESET_VECTOR;
     
     // --> set bios shutdown code to 0x0a.
@@ -286,15 +297,152 @@ void karch_smp_start_ap() {
         while(1);
     }
 
+    BIOS_RESET_VECTOR = ap_entry; // --> now, APs will boot here.
+
+    // --> AP's ID pointer that points current ID value.
+    uint32_t* ap_id = (uint32_t*) (ap_entry + ((uint32_t)&smp_ap_id - (uint32_t)&smp_ap_entry));
+    for (uint8_t i = 0; i < cpu_n; ++i) {
+        if (bsp_id == i) {  // --> skip boot CPU.
+            continue;
+        }
+
+        // --> set the CPU ID.
+        const uint8_t now_id = i;
+        *ap_id = smp_ap_id = i;
+        
+        karch_cpu_t* cpu = karch_get_cpu(now_id);
+
+        // --> reset the probe to wait boot completion state.
+        smp_ap_probe = -1;
+        cpu_mfence();
+
+        if (!karch_lapic_send_init_ipi(now_id)) {
+            // --> failed to send init command.
+            continue;
+        }
+
+        if (!karch_lapic_send_startup_ipi(now_id, ap_entry)) {
+            // --> failed to send startup command.
+            continue;
+        }
+
+        uint32_t counter = 0;
+        while (counter++ < SMP_WAIT_CPU_MDELAY) { // --> 60 seconds.
+            // --> delay 10 millis.
+            karch_lapic_mdelay(1); 
+
+            // --> CPU is ready now.
+            if (smp_ap_probe == now_id) {
+                cpu->flags |= CPUFLAG_INIT_SMP_BOOT;
+                break;
+            }
+        }
+    }
+
+    // --> restore bios reset vector here.
+    BIOS_RESET_VECTOR = smp_bios_rstv;
+
+    // --> set bios shutdown code to 0x00.
+    cpu_out8(RTC_INDEX, 0x0f);
+    cpu_out8(RTC_IO, 0x00);
+
+    karch_smp_identify_cpu(bsp_id);
+    karch_cpu_t* bsp = karch_get_cpu(bsp_id);
+    if (bsp) {
+        bsp->flags |= CPUFLAG_INIT_SMP_BOOT;
+    }
 
     // TODO: run kmain on BSP.
+    
     while(1);
+}
+
+/**
+ * called from `karch_smp_startup_ap32`. (<-- smp_ap_entry)
+ */
+void karch_smp_boot_ap32() {
+    karch_cpu_t* cpu = karch_get_cpu(smp_ap_id);
+    if (!cpu) {
+        // --> AP panic.
+        while(1) {
+            cpu_hlt();
+        }
+
+        return;
+    }
+
+    // --> switch stack space, then continue to `karch_smp_init_ap32`.
+    switch_stack(cpu->stackmark, karch_smp_init_ap32);
 }
 
 /**
  * start the AP.
  */
 void karch_smp_init_ap32() {
+    uint32_t now_id = smp_ap_id;
+    uint16_t* vga = (uint16_t*) 0xb8000;
 
+    // --> set completion here.
+    smp_ap_probe = now_id;
+    cpu_mfence();
+
+    // --> identify current running AP.
+    karch_smp_identify_cpu(now_id);
+
+    *(vga + (now_id + 1)) = ('0' + now_id) | (15 << 8);
     while(1);
+}
+
+void karch_smp_identify_cpu(uint8_t cpu_id) {
+    karch_cpu_t* cpu = karch_get_cpu(cpu_id);
+    if (!cpu) {
+        return;
+    }
+
+    uint32_t eax = 0, ebx, edx, ecx;
+    read_cpuid(&eax, &ebx, &ecx, &edx);
+
+    if (ebx == INTEL_CPUID_GEN_EBX && 
+        ecx == INTEL_CPUID_GEN_ECX &&
+        edx == INTEL_CPUID_GEN_EDX) 
+    {
+        // intel.
+    }
+
+    else if (
+        ebx == AMD_CPUID_GEN_EBX && 
+        ecx == AMD_CPUID_GEN_ECX &&
+        edx == AMD_CPUID_GEN_EDX) 
+    {
+        // amd.
+    }
+
+    else {
+        // unknown.
+    }
+
+    if (eax == 0) {
+        return;
+    }
+    
+    eax = 1;
+    read_cpuid(&eax, &ebx, &ecx, &edx);
+
+    uint32_t stepping = eax & 0x0f;
+    uint32_t model = (eax >> 4) & 0x0f;
+
+    if (model == 0x0f || model == 0x06) {
+        model += ((eax >> 16) & 0x0f) << 4;
+    }
+
+    uint32_t family = (eax >> 8) & 0x0f;
+    if (family == 0x0f) {
+        family += (eax >> 20) & 0xff;
+    }
+
+    cpu->ident_step = stepping;
+    cpu->ident_model = model;
+    cpu->ident_family = family;
+    cpu->ident_ecx = ecx;
+    cpu->ident_edx = edx;
 }

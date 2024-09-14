@@ -41,6 +41,8 @@ global load_fs
 global load_gs
 global load_ss
 
+global switch_stack;
+
 global cpu_hlt;
 global cpu_cli;
 global cpu_sti;
@@ -56,7 +58,8 @@ global cpu_out32;
 
 global cpu_cmpxchg32;
 global cpu_read_tsc;
-global switch_stack;
+global cpu_mfence;
+global cpu_pause;
 
 read_cr0:
     push ebp
@@ -444,4 +447,12 @@ cpu_read_tsc:
     pop ebp
     pop eax
     pop edx
+    ret
+
+cpu_mfence:
+    mfence
+    ret
+
+cpu_pause:
+    pause
     ret

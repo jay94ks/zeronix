@@ -16,6 +16,10 @@ void karch_init_idt() {
     desc_idt.limit = sizeof(idt) - 1;
 }
 
+karch_desc_t* karch_get_idt_ptr() {
+    return &desc_idt;
+}
+
 void karch_reset_idt() {
     kmemset(idt, 0, sizeof(idt));
 }

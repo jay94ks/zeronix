@@ -18,6 +18,7 @@ align 4
 ; Kernel Stack.
 ;=======================================================================
 section .kstack
+global _kstack_tail ; --> reused by SMP's AP bootstrap.
 _kstack_head:
 	resb 1024	; 1K stack to call `kboot` function.
 _kstack_tail:

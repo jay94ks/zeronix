@@ -27,10 +27,12 @@ debug:
 	$(MAKE) debug-2nd
 	
 debug-2nd: $(KERNEL_IMAGE)
-	qemu-system-i386 -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE) -s -S
+	@if [ -f ./qemu-debug-log ]; then rm ./qemu-debug-log; fi
+	qemu-system-i386 -D ./qemu-debug-log -d cpu_reset,in_asm -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE) -s -S
 
 run: $(KERNEL_IMAGE)
-	qemu-system-i386 -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE)
+	@if [ -f ./qemu-debug-log ]; then rm ./qemu-debug-log; fi
+	qemu-system-i386 -D ./qemu-debug-log -d cpu_reset,in_asm -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE)
 
 clean:
 	@find . -type f -name "*.o" -exec rm {} \;
@@ -44,7 +46,7 @@ $(TARGET_MODULE): $(OBJS)
 
 $(KERNEL_IMAGE): $(TARGET_MODULE) $(KERN_KO)
 	$(LD) -T $(LDSCRIPT) $(KERN_KO) $(TARGET_MODULE) -o $(KERNEL_IMAGE)
-	$(OBJDUMP) -D $(KERNEL_IMAGE) > $(KERNEL_IMAGE).dump
+	$(OBJDUMP) -M intel -D $(KERNEL_IMAGE) > $(KERNEL_IMAGE).dump
 
 $(ARCH_DIR)/arch.ko:
 	$(MAKE) $(MAKEOPT) -C $(ARCH_DIR)/

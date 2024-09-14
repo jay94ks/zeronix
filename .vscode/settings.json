@@ -15,6 +15,10 @@
         "spinlock.h": "c",
         "except.h": "c",
         "cpu.h": "c",
-        "init.h": "c"
+        "init.h": "c",
+        "i8253.h": "c",
+        "idt.h": "c",
+        "i8259.h": "c",
+        "apic_idt.h": "c"
     }
 }

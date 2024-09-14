@@ -30,6 +30,7 @@ uint8_t cpu_n, mode_min86;
 
 // --
 void karch_early_init();
+void karch_load_segs();
 void karch_set_min86();
 
 /**
@@ -48,7 +49,7 @@ void karch_init(kbootinfo_t* info) {
     mode_min86 = 0;
 
     // --> initialize ACPI.
-    if (karch_init_acpi() && karch_init_apic())
+    if (!karch_init_acpi() || !karch_init_apic())
     {
         // --> working as min86 mode.
         mode_min86 = 1;
@@ -98,16 +99,25 @@ void karch_early_init() {
     load_tr(SEG_TSS(0));
 
     // --> shift to new kernel segment.
+    karch_load_segs();
+
+    // --> re-initialize early paging.
+    //   : after this call, bootstrap code is not needed anymore.
+    karch_init_page(&bootinfo);
+}
+
+/**
+ * load kernel segments.
+ * reused by SMP's AP bootstrap in smp.asm.
+ */
+void karch_load_segs() {
+    // --> shift to new kernel segment.
     load_kern_cs();
     load_ds(SEG_SEL(GDT_KERN_DS));
     load_es(SEG_SEL(GDT_KERN_DS));
     load_fs(SEG_SEL(GDT_KERN_DS));
     load_gs(SEG_SEL(GDT_KERN_DS));
     load_ss(SEG_SEL(GDT_KERN_DS));
-
-    // --> re-initialize early paging.
-    //   : after this call, bootstrap code is not needed anymore.
-    karch_init_page(&bootinfo);
 }
 
 void karch_set_min86() {

@@ -62,4 +62,64 @@ uint8_t karch_lapic_eoi();
  */
 uint8_t karch_lapic_enable(uint8_t cpu);
 
+/**
+ * set oneshot timer that is based on LAPIC.
+ * this works with `karch_get_cpu_current`.
+ * so, this can be called after it is ready.
+ */
+uint8_t karch_lapic_oneshot_timer(uint32_t usec);
+
+/**
+ * set periodic timer that is based on LAPIC.
+ * this works with `karch_get_cpu_current`.
+ * so, this can be called after it is ready.
+ */
+uint8_t karch_lapic_periodic_timer(uint32_t freq);
+
+/**
+ * stop the LAPIC timer.
+ * this is available after lapic initialized.
+ */
+void karch_lapic_stop_timer();
+
+/**
+ * micro-delay based on LAPIC timer.
+ * this works with `karch_get_cpu_current`.
+ * so, this can be called after it is ready.
+ */
+void karch_lapic_udelay(uint32_t n);
+
+/**
+ * milli-delay based on LAPIC timer.
+ * this works with `karch_get_cpu_current`.
+ * so, this can be called after it is ready.
+ */
+void karch_lapic_mdelay(uint32_t ms);
+
+/**
+ * result codes for `wait_flag_*` functions.
+ * karch_lapic_wr_t: wait result type.
+*/
+typedef enum {
+    LAPICWR_SUCCESS = 0,
+    LAPICWR_EXHAUSTED = 1,
+    LAPICWR_ERROR = 2,
+} karch_lapic_wr_t;
+
+/**
+ * wait for LAPIC flag to be set until `tries`.
+ * this is available after lapic initialized.
+ * ----
+ * returns: karch_lapic_waitresult_t.
+ */
+karch_lapic_wr_t karch_lapic_wait_flag_set(uint32_t addr, uint32_t flag, uint32_t tries);
+
+/**
+ * wait for LAPIC flag to be cleared until `tries`.
+ * this is available after lapic initialized.
+ * ----
+ * returns: karch_lapic_waitresult_t.
+ */
+karch_lapic_wr_t karch_lapic_wait_flag_clear(uint32_t addr, uint32_t flag, uint32_t tries);
+
 #endif

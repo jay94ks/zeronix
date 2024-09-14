@@ -82,6 +82,7 @@ void kboot_read_mbinfo(kbootinfo_t* boot, mbinfo_t* info) {
     // --> put all memory map here.
     if ((info->flags & MBINFO_MEM_MAP) != 0) {
         mb_mmap_t* mmap = (mb_mmap_t*) info->mmap_addr;
+
         while((uint32_t)mmap < info->mmap_addr + info->mmap_len) {
             if (mmap->type != MBMMAP_AVAIL) {
                 mmap = (mb_mmap_t*)((uint32_t)mmap + mmap->size + sizeof(mmap->size));
@@ -99,7 +100,6 @@ void kboot_read_mbinfo(kbootinfo_t* boot, mbinfo_t* info) {
         // --> higher than 1MB.
         kboot_add_mmap(boot, 0x100000, info->mem_high * 1024);
     }
-
 }
 
 uint32_t kboot_round_up(uint32_t n, uint32_t v) {
@@ -129,7 +129,7 @@ void kboot_add_mmap(kbootinfo_t* boot, uint64_t addr, uint64_t len) {
     }
 
     addr = kboot_round_up(addr, I686_PAGE_SIZE);
-    len = kboot_round_down(addr, I686_PAGE_SIZE);
+    len = kboot_round_down(len, I686_PAGE_SIZE);
 
     uint32_t n = boot->mmap_cnt++;
     if (n >= KBOOT_MAX_MEMMAP) {

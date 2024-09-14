@@ -10,6 +10,11 @@
 void karch_init_gdt();
 
 /**
+ * (SMP only) get GDT pointer.
+ */
+karch_desc_t* karch_get_gdt_ptr();
+
+/**
  * flush current GDT entries to the CPU.
  */
 void karch_flush_gdt();

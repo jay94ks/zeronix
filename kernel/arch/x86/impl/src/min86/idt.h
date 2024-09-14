@@ -25,6 +25,11 @@ struct gatevec {
 void karch_init_idt();
 
 /**
+ * (SMP only) get IDT pointer. 
+ */
+karch_desc_t* karch_get_idt_ptr();
+
+/**
  * clear all interrupt vector to `not-mapped`.
 */
 void karch_reset_idt();

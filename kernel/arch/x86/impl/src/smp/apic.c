@@ -399,3 +399,96 @@ void karch_lapic_i8259_handler(const i8259_t* t) {
         // --> spurious: do nothing.
     }
 }
+
+uint8_t karch_lapic_oneshot_timer(uint32_t usec) {
+    const karch_cpu_t* cpu = karch_get_cpu_current();
+    if (!cpu) {
+        return 0;
+    }
+
+    uint32_t tpus = cpu->lapic_freq / 1000000;
+    karch_lapic_write(LAPIC_TIMER_ICR, usec * tpus);
+    karch_lapic_write(LAPIC_TIMER_DCR, APIC_TDCR_1);
+    karch_lapic_write(LAPIC_LVTTR, APIC_TIMER_INT_VECTOR);
+    return 1;
+}
+
+uint8_t karch_lapic_periodic_timer(uint32_t freq) {
+    const karch_cpu_t* cpu = karch_get_cpu_current();
+    if (!cpu) {
+        return 0;
+    }
+
+    karch_lapic_write(LAPIC_TIMER_DCR, APIC_TDCR_1);
+    karch_lapic_write(LAPIC_LVTTR, APIC_LVTT_TM | APIC_TIMER_INT_VECTOR);
+    karch_lapic_write(LAPIC_TIMER_ICR, cpu->lapic_freq / freq);
+    return 1;
+}
+
+void karch_lapic_stop_timer() {
+    uint32_t lvttr = karch_lapic_read(LAPIC_LVTTR);
+	karch_lapic_write(LAPIC_LVTTR, lvttr | APIC_LVTT_MASK);
+    karch_lapic_write(LAPIC_TIMER_ICR, 0);
+    karch_lapic_write(LAPIC_TIMER_DCR, 0);
+}
+
+void karch_lapic_udelay(uint32_t n) {
+	karch_lapic_oneshot_timer(n);
+	while (karch_lapic_read(LAPIC_TIMER_CCR)) {
+		cpu_pause();
+    }
+}
+
+void karch_lapic_mdelay(uint32_t ms) {
+    while (ms > 0) {
+        uint32_t slice = ms > 16 ? 16 : ms;
+
+        // --> delay in 16k usec unit.
+        ms -= slice;
+        karch_lapic_udelay(slice * 1000);
+    }
+}
+
+karch_lapic_wr_t karch_lapic_wait_flag_set(uint32_t addr, uint32_t flag, uint32_t tries) {
+    uint32_t err;
+
+    while (1) {
+        if ((karch_lapic_read(addr) & flag) == flag) {
+            break;
+        }
+
+        if ((err = karch_lapic_error()) != 0) {
+            return LAPICWR_ERROR;
+        }
+    
+        if (!tries) {
+            return LAPICWR_EXHAUSTED;
+        }
+
+        tries--;
+    }
+
+    return LAPICWR_SUCCESS;
+}
+
+karch_lapic_wr_t karch_lapic_wait_flag_clear(uint32_t addr, uint32_t flag, uint32_t tries) {
+    uint32_t err;
+
+    while (1) {
+        if ((karch_lapic_read(addr) & flag) != flag) {
+            break;
+        }
+
+        if ((err = karch_lapic_error()) != 0) {
+            return LAPICWR_ERROR;
+        }
+    
+        if (!tries) {
+            return LAPICWR_EXHAUSTED;
+        }
+
+        tries--;
+    }
+
+    return LAPICWR_SUCCESS;
+}

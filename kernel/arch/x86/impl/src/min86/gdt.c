@@ -31,6 +31,10 @@ void karch_init_gdt() {
     karch_set_gdt_data(&gdt[GDT_KERN_DS], 0, 0xffffffffu, PRIV_USER);
 }
 
+karch_desc_t* karch_get_gdt_ptr() {
+    return &desc_gdt;
+}
+
 void karch_flush_gdt() {
     load_gdt(&desc_gdt);
 }

@@ -11,12 +11,14 @@ typedef struct { uint8_t _; } *karch_cpuvar_t;
  * Flags for karch_cpu_t.
  */
 enum {
-    CPUFLAG_INIT_BSP = 1,           // --> is_bsp flag is usable or not.
-    CPUFLAG_INIT_LAPIC = 2,         // --> apic_id is available or not.
-    CPUFLAG_INIT_LAPIC_FREQ = 4,    // --> lapic frequency.
-    CPUFLAG_INIT_FREQ = 8,          // --> frequency.
-    CPUFLAG_INIT_TSS = 16,          // --> tss and stackmark is set or not.
-    CPUFLAG_INIT_SMP_MODE = 32,     // --> smp_mode is available or not.
+    CPUFLAG_INIT_BSP        = 0x0001, // --> is_bsp flag is usable or not.
+    CPUFLAG_INIT_LAPIC      = 0x0002, // --> apic_id is available or not.
+    CPUFLAG_INIT_LAPIC_FREQ = 0x0004, // --> lapic frequency.
+    CPUFLAG_INIT_FREQ       = 0x0008, // --> frequency.
+    CPUFLAG_INIT_TSS        = 0x0010, // --> tss and stackmark is set or not.
+    CPUFLAG_INIT_SMP_MODE   = 0x0020, // --> smp_mode is available or not.
+    CPUFLAG_INIT_SMP_BOOT   = 0x0040, // --> the CPU is started and ready.
+    CPUFLAG_INIT_IDENT      = 0x0080, // --> CPU identification.
 };
 
 /**
@@ -51,7 +53,15 @@ typedef struct {
     uint32_t            freq;               // --> CPU frequency.
     uint32_t            lapic_freq;         // --> LAPIC bus frequency.
     uint8_t             smp_mode;           // --> SMP mode: one of CPUSMPF_*.
-    uint16_t            pad;
+    uint8_t             pad;
+
+    /* identification values: filled by SMP.c */
+    uint8_t             ident_step;
+    uint8_t             ident_family;
+    uint8_t             ident_model;
+    uint32_t            ident_ecx;
+    uint32_t            ident_edx;
+
     karch_tss_t         tss;                // --> task segment.
     karch_stackmark_t*  stackmark;          // --> stack mark.
     karch_cpuvar_t      vars[CPUVARS_MAX];  // --> CPU local variables.
