@@ -21,17 +21,14 @@
 #include "smp/smp.h"
 
 // --
-extern void* _karch_tss0_stack;
-
-// --
 kbootinfo_t bootinfo;
-karch_cpu_t cpus[MAX_CPU] __aligned(8);
-uint8_t cpu_n, mode_min86;
+uint8_t mode_min86;
 
 // --
 void karch_early_init();
 void karch_load_segs();
 void karch_set_min86();
+void karch_init_cpu();
 
 /**
  * arch-specific initialization. 
@@ -40,10 +37,9 @@ void karch_set_min86();
  */
 void karch_init(kbootinfo_t* info) {
     kmemcpy(&bootinfo, info, sizeof(bootinfo));
-    kmemset(cpus, 0, sizeof(cpus));
-    
+    karch_init_cpu();
     mode_min86 = 1;
-    cpu_n = 1;
+    
 
     karch_early_init();
     mode_min86 = 0;
@@ -147,67 +143,4 @@ void karch_emergency_print(const char* msg) {
 
     *vba++ = '.' | (15 << 8);
     *vba++ = (15 << 8);
-}
-
-uint8_t* karch_stacktop_for(uint8_t cpu) {
-    if (cpu >= MAX_CPU) {
-        return 0;
-    }
-
-    uint8_t* top = (uint8_t*) &_karch_tss0_stack;
-    return top - (I686_PAGE_SIZE * cpu);
-}
-
-uint8_t karch_count_cpu() {
-    return cpu_n;
-}
-
-karch_cpu_t* karch_get_cpu(uint8_t n) {
-    if (n >= cpu_n) {
-        return 0;
-    }
-
-    return &cpus[n];
-}
-
-uint8_t karch_set_count_cpu(uint8_t n) {
-    if (n >= MAX_CPU) {
-        return 0;
-    }
-
-    cpu_n = n;
-    return 1;
-}
-
-uint8_t karch_is_bsp_cpu(uint8_t n) {
-    if (n >= MAX_CPU || n >= cpu_n) {
-        return 0;
-    }
-
-    if (mode_min86 || !karch_smp_supported()) {
-        return n == 0 ? 1 : 0;
-    }
-
-    if ((cpus[n].flags & CPUFLAG_INIT_BSP) != 0) {
-        return cpus[n].is_bsp;
-    }
-
-    return 0;
-}
-
-uint8_t karch_is_bsp_cpu_current() {
-    if (mode_min86 || !karch_smp_supported()) {
-        return 1;
-    }
-
-    uint8_t smp_cpu = karch_smp_cpuid_current();
-    return karch_is_bsp_cpu(smp_cpu);
-}
-
-karch_cpu_t* karch_get_cpu_current() {
-    if (mode_min86 || !karch_smp_supported()) {
-        return &cpus[0];
-    }
-
-    return karch_get_cpu(karch_smp_cpuid_current());
 }

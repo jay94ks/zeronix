@@ -209,34 +209,10 @@ uint32_t karch_smp_roundup(uint32_t n, uint32_t v) {
 }
 
 /**
- * find lowest free memory.
+ * compute relative address.
  */
-uint32_t karch_smp_find_lowmem(uint32_t len) {
-    kbootinfo_t* boot = karch_get_bootinfo();
-	uint32_t lowest = 0xffffffffu;
-    uint32_t alloc = 0xffffffffu;
-
-    len = karch_smp_roundup(len, I686_PAGE_SIZE);
-
-    for(uint32_t i = 0; i < boot->mmap_cnt; ++i) {
-        if (boot->mmap[i].len < len) {
-            continue;
-        }
-
-        if (boot->mmap[i].addr < lowest) {
-            lowest = boot->mmap[i].addr;
-            alloc = i;
-        }
-    }
-
-    // --> make selected range as un-available.
-    if (alloc != 0xffffffffu) {
-        boot->mmap[alloc].addr += len;
-        boot->mmap[alloc].len -= len;
-    }
-
-	return (void*) lowest;
-}
+#define SMP_BOOT_ADDR(x)     \
+    ((((uint32_t)(x)) - ((uint32_t) &smp_ap_entry)) + SMP_AP_ENTRY_COPY_ADDR)
 
 /**
  * prepare entry point for each APs.
@@ -244,12 +220,7 @@ uint32_t karch_smp_find_lowmem(uint32_t len) {
  */
 uint32_t karch_smp_prepare_ap_entry() {
     uint32_t size = smp_ap_entry_end - smp_ap_entry_beg;
-    uint32_t lowmem = SMP_AP_ENTRY_COPY_ADDR; //karch_smp_find_lowmem(size);
-
-    // --> address must be in 1MB.
-    if (lowmem + size >= 0x00100000u) {
-        return 0xffffffffu;
-    }
+    uint32_t lowmem = SMP_AP_ENTRY_COPY_ADDR;
 
     karch_desc_t* idt = karch_get_idt_ptr();
     karch_desc_t* gdt = karch_get_gdt_ptr();
@@ -257,9 +228,11 @@ uint32_t karch_smp_prepare_ap_entry() {
 
     smp_ap_id = 0;
     smp_ap_pt = (uint32_t) boot->pagedir; // --> share BSP's page table.
-    smp_ap_gdt.base = (((uint32_t*)&smp_ap_gdt_tab) - ((uint32_t) &smp_ap_entry)) + lowmem;
+
+    // --> address calculation was corrupted, so, I've rewrote this.
+    smp_ap_gdt.base = SMP_BOOT_ADDR((uint32_t)&smp_ap_gdt_tab);
+    smp_ap_idt.base = SMP_BOOT_ADDR((uint32_t)&smp_ap_idt_tab);
     smp_ap_gdt.limit = gdt->limit;
-    smp_ap_idt.base = (((uint32_t*)&smp_ap_idt_tab) - ((uint32_t) &smp_ap_entry)) + lowmem;
     smp_ap_idt.limit = idt->limit;
 
     smp_ap_gdt_sys = *gdt;
@@ -310,8 +283,6 @@ void karch_smp_start_ap() {
         const uint8_t now_id = i;
         *ap_id = smp_ap_id = i;
         
-        karch_cpu_t* cpu = karch_get_cpu(now_id);
-
         // --> reset the probe to wait boot completion state.
         smp_ap_probe = -1;
         cpu_mfence();
@@ -333,7 +304,9 @@ void karch_smp_start_ap() {
 
             // --> CPU is ready now.
             if (smp_ap_probe == now_id) {
-                cpu->flags |= CPUFLAG_INIT_SMP_BOOT;
+                karch_set_cpu_init_flags(
+                    now_id, CPUFLAG_INIT_SMP_BOOT);
+
                 break;
             }
         }
@@ -347,11 +320,9 @@ void karch_smp_start_ap() {
     cpu_out8(RTC_IO, 0x00);
 
     karch_smp_identify_cpu(bsp_id);
-    karch_cpu_t* bsp = karch_get_cpu(bsp_id);
-    if (bsp) {
-        bsp->flags |= CPUFLAG_INIT_SMP_BOOT;
-    }
-
+    karch_set_cpu_init_flags(
+        bsp_id, CPUFLAG_INIT_SMP_BOOT);
+        
     // TODO: run kmain on BSP.
     
     while(1);
@@ -388,6 +359,9 @@ void karch_smp_init_ap32() {
 
     // --> identify current running AP.
     karch_smp_identify_cpu(now_id);
+    
+    karch_flush_gdt();
+    karch_flush_idt();
 
     *(vga + (now_id + 1)) = ('0' + now_id) | (15 << 8);
     while(1);

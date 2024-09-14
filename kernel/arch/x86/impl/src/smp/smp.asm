@@ -74,18 +74,18 @@ smp_ap_entry:
     mov cr4, eax
 
     ; --> read system table descriptors.
-    nop
-    mov ax, (__smp_ap_gdt_sys - smp_ap_entry)
+    ;nop
+    ;mov ax, (__smp_ap_gdt_sys - smp_ap_entry)
 
-    nop
-    mov bx, (__smp_ap_idt_sys - smp_ap_entry)
+    ;nop
+    ;mov bx, (__smp_ap_idt_sys - smp_ap_entry)
     
     ; --> load 32-bit gdt and idt.
-    mov di, ax
-	lgdt	[di]
+    ;mov di, ax
+	;lgdt	[di]
     
-    mov di, bx
-    lidt	[di]
+    ;mov di, bx
+    ;lidt	[di]
 
     ; jump to highly mapped kernel.
 

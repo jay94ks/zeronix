@@ -24,11 +24,11 @@ enum {
 /**
  * Modes for `smp_mode`.
  */
-enum {
+typedef enum {
     CPUSMPF_NOT_SMP = 0,
     CPUSMPF_BSP,                    // --> the CPU initialized as BSP.
     CPUSMPF_NOT_BSP                 // --> the CPU is not BSP.
-};
+} karch_cpu_smpmode_t;
 
 enum {
     CPUVARS_ZERO = 0,
@@ -47,6 +47,10 @@ enum {
  * lapic_freq, freq: assigned from `karch_lapic_calibrate_clocks` at `arch/x86/smp/apic.c`.
  */
 typedef struct {
+    karch_tss_t         tss;                // --> task segment.
+    karch_stackmark_t*  stackmark;          // --> stack mark.
+    karch_cpuvar_t      vars[CPUVARS_MAX];  // --> CPU local variables.
+
     uint16_t            flags;              // --> flags: CPUFLAG_INIT_*.
     uint8_t             is_bsp;             // --> indicates whether the CPI is BSP or not.
     uint8_t             apic_id;            // --> apic id.
@@ -61,10 +65,6 @@ typedef struct {
     uint8_t             ident_model;
     uint32_t            ident_ecx;
     uint32_t            ident_edx;
-
-    karch_tss_t         tss;                // --> task segment.
-    karch_stackmark_t*  stackmark;          // --> stack mark.
-    karch_cpuvar_t      vars[CPUVARS_MAX];  // --> CPU local variables.
 } karch_cpu_t;
 
 // --------------
@@ -85,7 +85,6 @@ void karch_emergency_print(const char* msg);
 /**
  * get the kernel stack for specified cpu.
  * this can be called at anywhere.
- * this defined at arch/x86/impl/src/arch.c
  * 
  * @param max: see `MAX_CPU` value.
  * if max value over, this returns null.
@@ -132,6 +131,23 @@ karch_cpu_t* karch_get_cpu_current();
  * returns non-zero value if succeed.
  */
 uint8_t karch_set_count_cpu(uint8_t n);
+
+/**
+ * set the CPU's SMP mode value.
+*/
+uint8_t karch_set_smp_mode(uint8_t cpu_id, karch_cpu_smpmode_t mode);
+
+/**
+ * set the CPU flags for specified cpu id.
+ * returns non-zero value if succeed.
+*/
+uint8_t karch_set_cpu_init_flags(uint8_t cpu_id, uint32_t flag);
+
+/**
+ * unset the CPU flags for specified cpu id.
+ * returns non-zero value if succeed.
+*/
+uint8_t karch_unset_cpu_init_flags(uint8_t cpu_id, uint32_t flag);
 
 #endif
 
