@@ -1,4 +1,4 @@
-#include <zeronix/arch/x86/cpuinfo.h>
+#include <zeronix/arch/x86/cpu.h>
 #include <zeronix/arch/x86/klib.h>
 #include <zeronix/arch/x86/i686.h>
 

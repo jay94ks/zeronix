@@ -28,11 +28,11 @@ debug:
 	
 debug-2nd: $(KERNEL_IMAGE)
 	@if [ -f ./qemu-debug-log ]; then rm ./qemu-debug.log; fi
-	qemu-system-i386 -D ./qemu-debug-log -d cpu_reset,in_asm -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE) -s -S
+	qemu-system-i386 -D ./qemu-debug.log -d cpu_reset,in_asm -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE) -s -S
 
 run: $(KERNEL_IMAGE)
 	@if [ -f ./qemu-debug-log ]; then rm ./qemu-debug.log; fi
-	qemu-system-i386 -D ./qemu-debug-log -d cpu_reset,in_asm -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE)
+	qemu-system-i386 -D ./qemu-debug.log -d cpu_reset,in_asm -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE)
 
 clean:
 	@find . -type f -name "*.o" -exec rm {} \;

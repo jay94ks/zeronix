@@ -4,7 +4,6 @@
 #include "apic_ipi.h"
 
 #include <zeronix/kcrt/string.h>
-#include <zeronix/arch/x86/cpuinfo.h>
 #include <zeronix/arch/x86/klib.h>
 #include <zeronix/arch/x86/spinlock.h>
 #include <zeronix/arch/x86/cpu.h>

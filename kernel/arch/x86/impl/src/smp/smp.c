@@ -11,7 +11,6 @@
 
 #include <zeronix/boot.h>
 #include <zeronix/kcrt/string.h>
-#include <zeronix/arch/x86/cpuinfo.h>
 #include <zeronix/arch/x86/layout.h>
 #include <zeronix/arch/x86/klib.h>
 #include <zeronix/arch/x86/cpu.h>
