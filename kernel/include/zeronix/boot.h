@@ -13,24 +13,28 @@ typedef struct {
 
 /**
  * kbootinfo_mmap_type_t
+ * this'll be just copied from multiboot.
  */
 typedef enum {
-    KBOOTMMAP_UNAVAILABLE = 0,
-    KBOOTMMAP_AVAILABLE = 1,
+    KBOOTMMAP_UNKNOWN = 0,
+    KBOOTMMAP_AVAIL = 1,
+    KBOOTMMAP_RESERVED = 2,
+    KBOOTMMAP_ACPI = 3,
+    KBOOTMMAP_NVS = 4,
+    KBOOTMMAP_BADRAM = 5,
 } kbootinfo_mmap_type_t;
 
 /**
  * kbootinfo_mmap_t.
  */
 typedef struct {
-    uint32_t size;
-    uint64_t addr;
-    uint64_t len;
+    uint32_t addr;
+    uint32_t len;
     uint32_t type; // --> kbootinfo_mmap_type_t
 } kbootinfo_mmap_t;
 
 // --> maximum entities of kbootinfo_mmap_t.
-#define KBOOT_MAX_MEMMAP    32
+#define KBOOT_MAX_MEMMAP    64
 
 /**
  * kbootinfo_t.

@@ -30,10 +30,8 @@
 #define I686_VM_PWT	            0x008	/* Write through */
 #define I686_VM_PCD	            0x010	/* Cache disable */
 #define I686_VM_ACC	            0x020	/* Accessed */
-#define I686_VM_ADDR_MASK       0xFFFFF000 /* physical address */
 #define I686_VM_ADDR_MASK_4MB   0xFFC00000 /* physical address */
 #define I686_VM_OFFSET_MASK_4MB 0x003FFFFF /* physical address */
-#define I686_VM_ADDR_LIMIT      I686_VM_ADDR_MASK
 
 /* Page directory specific flags. */
 #define I686_VM_BIGPAGE	0x080	/* 4MB page */

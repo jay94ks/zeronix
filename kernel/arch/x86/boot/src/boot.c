@@ -12,10 +12,15 @@ kbootinfo_t temp_bootinfo;
 // --
 void kboot_panic(const char* text);
 void kboot_read_mbinfo(kbootinfo_t* boot, mbinfo_t* info);
-void kboot_add_mmap(kbootinfo_t* boot, uint64_t addr, uint64_t len);
+void kboot_add_mmap(kbootinfo_t* boot, mb_mmap_t* mmap);
 void kboot_tpg_identity(kbootinfo_t* info);
 void kboot_tpg_map_kernel(kbootinfo_t* info);
 void kboot_tpg_enable_paging();
+
+// --> 4K address mask. because i686 manages address space in 4k unit.
+#define KBOOT_i686_SHIFT_4K     12
+#define KBOOT_i686_MASK_4K      0x00000fffu
+#define KBOOT_i686_ADDR_MAX     (~KBOOT_i686_MASK_4K)
 
 // --
 #define KBOOT_VIDEO ((uint16_t*) 0xb8000)
@@ -89,47 +94,53 @@ void kboot_read_mbinfo(kbootinfo_t* boot, mbinfo_t* info) {
                 continue;
             }
 
-            kboot_add_mmap(boot, mmap->addr, mmap->len);
+            kboot_add_mmap(boot, mmap);
             mmap = (mb_mmap_t*)((uint32_t)mmap + mmap->size + sizeof(mmap->size));
         }
     }
     else {
+        mb_mmap_t temp;
+
+        temp.type = MBMMAP_AVAIL;
+        temp.addr = 0;
+        temp.len = info->mem_low * 1024;
+
         // --> lower 1MB.
-        kboot_add_mmap(boot, 0, info->mem_low * 1024);
+        kboot_add_mmap(boot, &temp);
+        
+        temp.addr = 0x100000;
+        temp.len = info->mem_high * 1024;
 
         // --> higher than 1MB.
-        kboot_add_mmap(boot, 0x100000, info->mem_high * 1024);
+        kboot_add_mmap(boot, &temp);
     }
 }
 
-uint32_t kboot_round_up(uint32_t n, uint32_t v) {
-    if ((n % v) != 0) {
-        return (n / v + 1) * v;
-    }
-
-    return n;
-}
-
-uint32_t kboot_round_down(uint32_t n, uint32_t v) {
-    return (n / v) * v;
-}
-
-void kboot_add_mmap(kbootinfo_t* boot, uint64_t addr, uint64_t len) {
+void kboot_add_mmap(kbootinfo_t* boot, mb_mmap_t* mmap) {
+    uint32_t addr = mmap->addr;
+    uint32_t end_addr = addr + mmap->len;
+    
     // --> truncate over 4GB, currently, can not handle it.
-    if (addr > I686_VM_ADDR_LIMIT) {
+    if (addr > KBOOT_i686_ADDR_MAX) {
+        addr = KBOOT_i686_ADDR_MAX;
+    }
+
+    if (end_addr > KBOOT_i686_ADDR_MAX) {
+        end_addr = KBOOT_i686_ADDR_MAX;
+    }
+
+    // --> round up.
+    //   : equalivant: (addr % 4096) != 0 --> addr = (addr / 4096 + 1) * 4096.
+    if ((addr & KBOOT_i686_MASK_4K) != 0) {
+        addr = ((addr >> KBOOT_i686_SHIFT_4K) + 1) << KBOOT_i686_SHIFT_4K;
+    }
+
+    // --> round down.
+    //   : equalivant: end_addr = (end_addr / 4096) * 4096.
+    end_addr = (end_addr >> 12) << 12;
+    if (addr >= end_addr) {
         return;
     }
-
-    if (addr + len > I686_VM_ADDR_LIMIT) {
-        len -= (addr + len - I686_VM_ADDR_LIMIT);
-    }
-
-    if (!len) {
-        return;
-    }
-
-    addr = kboot_round_up(addr, I686_PAGE_SIZE);
-    len = kboot_round_down(len, I686_PAGE_SIZE);
 
     uint32_t n = boot->mmap_cnt++;
     if (n >= KBOOT_MAX_MEMMAP) {
@@ -137,12 +148,14 @@ void kboot_add_mmap(kbootinfo_t* boot, uint64_t addr, uint64_t len) {
     }
 
     boot->mmap[n].addr = addr;
-    boot->mmap[n].len = len;
-    boot->mmap[n].type = KBOOTMMAP_AVAILABLE;
+    boot->mmap[n].len = end_addr - addr;
+    boot->mmap[n].type = mmap->type;
 
-    uint32_t mark = addr + len;
-    if (mark > boot->mem_high_phys) {
-        boot->mem_high_phys = mark;
+    // --> remember high phys address to get kernel memory.
+    if (mmap->type == MBMMAP_AVAIL) {
+        if (end_addr > boot->mem_high_phys) {
+            boot->mem_high_phys = end_addr;
+        }
     }
 }
 

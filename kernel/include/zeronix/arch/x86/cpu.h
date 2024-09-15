@@ -71,7 +71,6 @@ typedef struct {
     /* identification values: filled by SMP.c */
     uint32_t            ident_vendor[4];    // eax, ebx, ecx, edx.
     uint32_t            ident_feature[4];   // eax, ebx, ecx, edx.
-    
 } karch_cpu_t;
 
 // --------------
