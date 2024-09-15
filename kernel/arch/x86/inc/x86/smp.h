@@ -1,7 +1,7 @@
 #ifndef __KERNEL_ARCH_X86_INC_X86_SMP_H__
 #define __KERNEL_ARCH_X86_INC_X86_SMP_H__
 #include <x86/types.h>
-
+#include <x86/env.h>
 #include <x86/spinlock.h>
 #include <x86/k86/taskseg.h>
 #include <x86/peripherals/apic.h>

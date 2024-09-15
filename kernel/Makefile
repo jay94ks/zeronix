@@ -2,8 +2,10 @@ CURRENT_PATH = $(shell pwd)
 TARGET_ARCH=x86
 
 MODS=$(shell find ./arch/$(TARGET_ARCH)/ -name Makefile | sort)
+LIBS=$(shell find ./lib/ -name Makefile | sort)
 KERNEL=$(shell find ./mods/ -name Makefile | sort)
 
+MODS += $(LIBS)
 MODS += $(KERNEL)
 
 TEMP=$(subst /Makefile,,${MODS})
