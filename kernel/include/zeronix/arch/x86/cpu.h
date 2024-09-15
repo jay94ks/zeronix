@@ -38,6 +38,15 @@ enum {
 };
 
 /**
+ * karch_cpu_vendor_t
+ */
+typedef enum {
+    CPUVENDOR_UNKNOWN = 0,
+    CPUVENDOR_INTEL,
+    CPUVENDOR_AMD,
+} karch_cpu_vendor_t;
+
+/**
  * karch_cpu_t.
  * this should be aligned as 8 bytes.
  * ----
@@ -60,11 +69,9 @@ typedef struct {
     uint8_t             pad;
 
     /* identification values: filled by SMP.c */
-    uint8_t             ident_step;
-    uint8_t             ident_family;
-    uint8_t             ident_model;
-    uint32_t            ident_ecx;
-    uint32_t            ident_edx;
+    uint32_t            ident_vendor[4];    // eax, ebx, ecx, edx.
+    uint32_t            ident_feature[4];   // eax, ebx, ecx, edx.
+    
 } karch_cpu_t;
 
 // --------------

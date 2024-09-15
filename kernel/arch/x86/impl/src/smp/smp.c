@@ -342,6 +342,10 @@ void karch_smp_boot_ap32() {
         return;
     }
 
+    // --> reload IDT/GDT here to clear SMP boot address.
+    karch_flush_gdt();
+    karch_flush_idt();
+
     // --> switch stack space, then continue to `karch_smp_init_ap32`.
     switch_stack(cpu->stackmark, karch_smp_init_ap32);
 }
@@ -360,9 +364,6 @@ void karch_smp_init_ap32() {
     // --> identify current running AP.
     karch_smp_identify_cpu(now_id);
     
-    karch_flush_gdt();
-    karch_flush_idt();
-
     *(vga + (now_id + 1)) = ('0' + now_id) | (15 << 8);
     while(1);
 }
@@ -374,13 +375,20 @@ void karch_smp_identify_cpu(uint8_t cpu_id) {
     }
 
     uint32_t eax = 0, ebx, edx, ecx;
-    read_cpuid(&eax, &ebx, &ecx, &edx);
+    read_cpuid(&eax, 
+        &cpu->ident_vendor[1], 
+        &cpu->ident_vendor[2], 
+        &cpu->ident_vendor[3]);
 
+    cpu->ident_vendor[0] = eax;
+    /*
+    cpu->ident_vendor = CPUVENDOR_UNKNOWN;
     if (ebx == INTEL_CPUID_GEN_EBX && 
         ecx == INTEL_CPUID_GEN_ECX &&
         edx == INTEL_CPUID_GEN_EDX) 
     {
         // intel.
+        cpu->ident_vendor = CPUVENDOR_INTEL;
     }
 
     else if (
@@ -389,19 +397,21 @@ void karch_smp_identify_cpu(uint8_t cpu_id) {
         edx == AMD_CPUID_GEN_EDX) 
     {
         // amd.
+        cpu->ident_vendor = CPUVENDOR_AMD;
     }
-
-    else {
-        // unknown.
-    }
-
+    */
     if (eax == 0) {
         return;
     }
     
     eax = 1;
-    read_cpuid(&eax, &ebx, &ecx, &edx);
+    read_cpuid(
+        &cpu->ident_feature[0], 
+        &cpu->ident_feature[1], 
+        &cpu->ident_feature[2], 
+        &cpu->ident_feature[3]);
 
+    /*
     uint32_t stepping = eax & 0x0f;
     uint32_t model = (eax >> 4) & 0x0f;
 
@@ -419,4 +429,5 @@ void karch_smp_identify_cpu(uint8_t cpu_id) {
     cpu->ident_family = family;
     cpu->ident_ecx = ecx;
     cpu->ident_edx = edx;
+    */
 }

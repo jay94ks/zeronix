@@ -7106,13 +7106,6 @@ IN:
 0x000e9a5e:  call   0xe99c3
 
 CPU Reset (CPU 3)
-----------------
-IN: 
-0x000e9a63:  pop    %eax
-0x000e9a64:  pop    %edx
-0x000e9a65:  cmpl   $0xff,0xf5244
-0x000e9a6f:  ja     0xe9a8f
-
 EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
 ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
 EIP=0000fff0 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
@@ -7121,36 +7114,20 @@ CS =f000 ffff0000 0000ffff 00009b00
 SS =0000 00000000 0000ffff 00009300
 DS =0000 00000000 0000ffff 00009300
 FS =0000 00000000 0000ffff 00009300
-----------------
-IN: 
-0x000e9a71:  mov    0x4(%esp),%edx
-0x000e9a75:  mov    %edx,%eax
-0x000e9a77:  shr    $0x18,%eax
-0x000e9a7a:  shr    $0x1d,%edx
-0x000e9a7d:  mov    $0x1,%ebx
-0x000e9a82:  mov    %al,%cl
-0x000e9a84:  shl    %cl,%ebx
-0x000e9a86:  or     %ebx,0xf5220(,%edx,4)
-0x000e9a8d:  jmp    0xe9ab3
-
 GS =0000 00000000 0000ffff 00009300
 LDT=0000 00000000 0000ffff 00008200
 TR =0000 00000000 0000ffff 00008b00
 GDT=     00000000 0000ffff
 IDT=     00000000 0000ffff
 CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
-----------------
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000 ----------------
 IN: 
-0x000e9ab3:  add    $0x10,%esp
-0x000e9ab6:  pop    %ebx
-0x000e9ab7:  pop    %esi
-0x000e9ab8:  ret    
+0x000e9a63:  pop    %eax
+0x000e9a64:  pop    %edx
+0x000e9a65:  cmpl   $0xff,0xf5244
+0x000e9a6f:  ja     0xe9a8f
 
-DR0=00000000 ----------------
-IN: 
-0x000ee399:  call   0xec3bb
 
-DR1=00000000 DR2=00000000 DR3=00000000 
 DR6=ffff0ff0 DR7=00000400
 CCS=00000000 CCD=00000000 CCO=EFLAGS
 EFER=0000000000000000
@@ -7163,16 +7140,39 @@ XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
 XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
 XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
 XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
-CPU Reset (CPU 2)
+----------------
+IN: 
+0x000e9a71:  mov    0x4(%esp),%edx
+0x000e9a75:  mov    %edx,%eax
+0x000e9a77:  shr    $0x18,%eax
+0x000e9a7a:  shr    $0x1d,%edx
+0x000e9a7d:  mov    $0x1,%ebx
+0x000e9a82:  mov    %al,%cl
+0x000e9a84:  shl    %cl,%ebx
+0x000e9a86:  or     %ebx,0xf5220(,%edx,4)
+0x000e9a8d:  jmp    0xe9ab3
+
+CPU Reset (CPU 1)
 EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
 ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
 EIP=0000fff0 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
 ES =0000 00000000 0000ffff 00009300
+----------------
+IN: 
+0x000e9ab3:  add    $0x10,%esp
+0x000e9ab6:  pop    %ebx
+0x000e9ab7:  pop    %esi
+0x000e9ab8:  ret    
+
 CS =f000 ffff0000 0000ffff 00009b00
 SS =0000 00000000 0000ffff 00009300
 DS =0000 00000000 0000ffff 00009300
 FS =0000 00000000 0000ffff 00009300
 GS =0000 00000000 0000ffff 00009300
+----------------
+IN: 
+0x000ee399:  call   0xec3bb
+
 LDT=0000 00000000 0000ffff 00008200
 TR =0000 00000000 0000ffff 00008b00
 GDT=     00000000 0000ffff
@@ -7191,7 +7191,7 @@ XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
 XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
 XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
 XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
-CPU Reset (CPU 1)
+CPU Reset (CPU 2)
 EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
 ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
 EIP=0000fff0 EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
@@ -7238,6 +7238,19 @@ IN:
 
 ----------------
 IN: 
+0x000ee3c6:  jmp    0xee3a1
+
+----------------
+IN: 
+0x000ee3a1:  cmp    0xf5240,%ebx
+0x000ee3a7:  je     0xee3c8
+
+----------------
+IN: 
+0x00010000:  ljmp   $0xf000,$0xd07e
+
+----------------
+IN: 
 0x00010000:  ljmp   $0xf000,$0xd07e
 
 ----------------
@@ -7250,19 +7263,6 @@ IN:
 0x000fd07f:  cld    
 0x000fd080:  mov    $0xfd08b,%edx
 0x000fd086:  jmp    0xfcf43
-
-----------------
-IN: 
-0x000ee3c6:  jmp    0xee3a1
-
-----------------
-IN: 
-0x00010000:  ljmp   $0xf000,$0xd07e
-
-----------------
-IN: 
-0x000ee3a1:  cmp    0xf5240,%ebx
-0x000ee3a7:  je     0xee3c8
 
 ----------------
 IN: 
@@ -7275,10 +7275,12 @@ IN:
 
 ----------------
 IN: 
-0x000fd07e:  cli    
-0x000fd07f:  cld    
-0x000fd080:  mov    $0xfd08b,%edx
-0x000fd086:  jmp    0xfcf43
+0x000fcf43:  lidtw  %cs:0x61b8
+0x000fcf49:  lgdtw  %cs:0x6178
+0x000fcf4f:  mov    %cr0,%ecx
+0x000fcf52:  and    $0x1fffffff,%ecx
+0x000fcf59:  or     $0x1,%ecx
+0x000fcf5d:  mov    %ecx,%cr0
 
 ----------------
 IN: 
@@ -7301,6 +7303,18 @@ IN:
 IN: 
 0x000fcf68:  mov    $0x10,%ecx
 0x000fcf6d:  mov    %ecx,%ds
+
+----------------
+IN: 
+0x000fcf60:  ljmpl  $0x8,$0xfcf68
+
+----------------
+IN: 
+0x000fcf6f:  mov    %ecx,%es
+
+----------------
+IN: 
+0x000fcf6f:  mov    %ecx,%es
 
 ----------------
 IN: 
@@ -7312,12 +7326,11 @@ IN:
 
 ----------------
 IN: 
-0x000fcf60:  ljmpl  $0x8,$0xfcf68
+0x000fcf71:  mov    %ecx,%ss
 
 ----------------
 IN: 
-0x000fcf68:  mov    $0x10,%ecx
-0x000fcf6d:  mov    %ecx,%ds
+0x000fcf71:  mov    %ecx,%ss
 
 ----------------
 IN: 
@@ -7338,6 +7351,11 @@ IN:
 
 ----------------
 IN: 
+0x000fd08b:  lock btsl $0x0,0xf5210
+0x000fd094:  jb     0xfd089
+
+----------------
+IN: 
 0x000fcf75:  mov    %ecx,%gs
 0x000fcf77:  jmp    *%edx
 
@@ -7348,18 +7366,8 @@ IN:
 
 ----------------
 IN: 
-0x000fd08b:  lock btsl $0x0,0xf5210
-0x000fd094:  jb     0xfd089
-
-----------------
-IN: 
-0x000fd08b:  lock btsl $0x0,0xf5210
-0x000fd094:  jb     0xfd089
-
-----------------
-IN: 
-0x000fd08b:  lock btsl $0x0,0xf5210
-0x000fd094:  jb     0xfd089
+0x000fd096:  mov    0xf520c,%esp
+0x000fd09c:  call   0xf033c
 
 ----------------
 IN: 
@@ -7368,11 +7376,6 @@ IN:
 ----------------
 IN: 
 0x000fd089:  pause  
-
-----------------
-IN: 
-0x000fd096:  mov    0xf520c,%esp
-0x000fd09c:  call   0xf033c
 
 ----------------
 IN: 
@@ -18737,7 +18740,6 @@ IN:
 0x0ffb1fdc:  mov    $0xf4,%eax
 0x0ffb1fe1:  call   0xffb1da3
 
-Servicing hardware INT=0x08
 ----------------
 IN: 
 0x0ffad8c8:  jmp    0xffad8b7
@@ -19235,6 +19237,7 @@ IN:
 0x000ca14c:  inc    %bx
 0x000ca14d:  je     0xca179
 
+Servicing hardware INT=0x08
 ----------------
 IN: 
 0x000ca14f:  mov    %bx,%es
@@ -28885,6 +28888,347 @@ IN: karch_lapic_calibrate_clocks
 0xf0407c35:  call   0xf040a364
 
 ----------------
+IN: __divmoddi4
+0xf0409e07:  pushl  -0x34(%ebp)
+0xf0409e0a:  pushl  -0x38(%ebp)
+0xf0409e0d:  call   0xf040993a
+
+----------------
+IN: __clzdi2
+0xf040993a:  push   %ebp
+0xf040993b:  mov    %esp,%ebp
+0xf040993d:  sub    $0x18,%esp
+0xf0409940:  mov    0x8(%ebp),%eax
+0xf0409943:  mov    %eax,-0x18(%ebp)
+0xf0409946:  mov    0xc(%ebp),%eax
+0xf0409949:  mov    %eax,-0x14(%ebp)
+0xf040994c:  movl   $0x0,-0x4(%ebp)
+0xf0409953:  cmpl   $0x0,-0x14(%ebp)
+0xf0409957:  ja     0xf0409960
+
+----------------
+IN: __clzdi2
+0xf0409959:  mov    $0x20,%eax
+0xf040995e:  jmp    0xf0409965
+
+----------------
+IN: __clzdi2
+0xf0409965:  mov    %eax,-0x8(%ebp)
+0xf0409968:  mov    -0x8(%ebp),%eax
+0xf040996b:  add    %eax,-0x4(%ebp)
+0xf040996e:  mov    -0x8(%ebp),%ecx
+0xf0409971:  mov    -0x18(%ebp),%eax
+0xf0409974:  mov    -0x14(%ebp),%edx
+0xf0409977:  shld   %cl,%eax,%edx
+0xf040997a:  shl    %cl,%eax
+0xf040997c:  test   $0x20,%cl
+0xf040997f:  je     0xf0409985
+
+----------------
+IN: __clzdi2
+0xf0409981:  mov    %eax,%edx
+0xf0409983:  xor    %eax,%eax
+0xf0409985:  mov    %eax,-0x18(%ebp)
+0xf0409988:  mov    %edx,-0x14(%ebp)
+0xf040998b:  cmpl   $0xffff,-0x14(%ebp)
+0xf0409992:  ja     0xf040999b
+
+----------------
+IN: __clzdi2
+0xf040999b:  mov    $0x0,%eax
+0xf04099a0:  mov    %eax,-0x8(%ebp)
+0xf04099a3:  mov    -0x8(%ebp),%eax
+0xf04099a6:  add    %eax,-0x4(%ebp)
+0xf04099a9:  mov    -0x8(%ebp),%ecx
+0xf04099ac:  mov    -0x18(%ebp),%eax
+0xf04099af:  mov    -0x14(%ebp),%edx
+0xf04099b2:  shld   %cl,%eax,%edx
+0xf04099b5:  shl    %cl,%eax
+0xf04099b7:  test   $0x20,%cl
+0xf04099ba:  je     0xf04099c0
+
+----------------
+IN: __clzdi2
+0xf04099c0:  mov    %eax,-0x18(%ebp)
+0xf04099c3:  mov    %edx,-0x14(%ebp)
+0xf04099c6:  cmpl   $0xffffff,-0x14(%ebp)
+0xf04099cd:  ja     0xf04099d6
+
+----------------
+IN: __clzdi2
+0xf04099cf:  mov    $0x8,%eax
+0xf04099d4:  jmp    0xf04099db
+
+----------------
+IN: __clzdi2
+0xf04099db:  mov    %eax,-0x8(%ebp)
+0xf04099de:  mov    -0x8(%ebp),%eax
+0xf04099e1:  add    %eax,-0x4(%ebp)
+0xf04099e4:  mov    -0x8(%ebp),%ecx
+0xf04099e7:  mov    -0x18(%ebp),%eax
+0xf04099ea:  mov    -0x14(%ebp),%edx
+0xf04099ed:  shld   %cl,%eax,%edx
+0xf04099f0:  shl    %cl,%eax
+0xf04099f2:  test   $0x20,%cl
+0xf04099f5:  je     0xf04099fb
+
+----------------
+IN: __clzdi2
+0xf04099fb:  mov    %eax,-0x18(%ebp)
+0xf04099fe:  mov    %edx,-0x14(%ebp)
+0xf0409a01:  cmpl   $0xfffffff,-0x14(%ebp)
+0xf0409a08:  ja     0xf0409a11
+
+----------------
+IN: __clzdi2
+0xf0409a0a:  mov    $0x4,%eax
+0xf0409a0f:  jmp    0xf0409a16
+
+----------------
+IN: __clzdi2
+0xf0409a16:  mov    %eax,-0x8(%ebp)
+0xf0409a19:  mov    -0x8(%ebp),%eax
+0xf0409a1c:  add    %eax,-0x4(%ebp)
+0xf0409a1f:  mov    -0x8(%ebp),%ecx
+0xf0409a22:  mov    -0x18(%ebp),%eax
+0xf0409a25:  mov    -0x14(%ebp),%edx
+0xf0409a28:  shld   %cl,%eax,%edx
+0xf0409a2b:  shl    %cl,%eax
+0xf0409a2d:  test   $0x20,%cl
+0xf0409a30:  je     0xf0409a36
+
+----------------
+IN: __clzdi2
+0xf0409a36:  mov    %eax,-0x18(%ebp)
+0xf0409a39:  mov    %edx,-0x14(%ebp)
+0xf0409a3c:  cmpl   $0x3fffffff,-0x14(%ebp)
+0xf0409a43:  ja     0xf0409a4c
+
+----------------
+IN: __clzdi2
+0xf0409a4c:  mov    $0x0,%eax
+0xf0409a51:  mov    %eax,-0x8(%ebp)
+0xf0409a54:  mov    -0x8(%ebp),%eax
+0xf0409a57:  add    %eax,-0x4(%ebp)
+0xf0409a5a:  mov    -0x8(%ebp),%ecx
+0xf0409a5d:  mov    -0x18(%ebp),%eax
+0xf0409a60:  mov    -0x14(%ebp),%edx
+0xf0409a63:  shld   %cl,%eax,%edx
+0xf0409a66:  shl    %cl,%eax
+0xf0409a68:  test   $0x20,%cl
+0xf0409a6b:  je     0xf0409a71
+
+----------------
+IN: __clzdi2
+0xf0409a71:  mov    %eax,-0x18(%ebp)
+0xf0409a74:  mov    %edx,-0x14(%ebp)
+0xf0409a77:  mov    -0x18(%ebp),%eax
+0xf0409a7a:  mov    -0x14(%ebp),%edx
+0xf0409a7d:  not    %eax
+0xf0409a7f:  not    %edx
+0xf0409a81:  mov    %edx,%eax
+0xf0409a83:  xor    %edx,%edx
+0xf0409a85:  shr    $0x1f,%eax
+0xf0409a88:  movzbl %al,%edx
+0xf0409a8b:  mov    -0x4(%ebp),%eax
+0xf0409a8e:  add    %edx,%eax
+0xf0409a90:  leave  
+0xf0409a91:  ret    
+
+----------------
+IN: __divmoddi4
+0xf0409e12:  add    $0x8,%esp
+0xf0409e15:  mov    %eax,%ebx
+0xf0409e17:  pushl  -0x2c(%ebp)
+0xf0409e1a:  pushl  -0x30(%ebp)
+0xf0409e1d:  call   0xf040993a
+
+----------------
+IN: __clzdi2
+0xf0409960:  mov    $0x0,%eax
+0xf0409965:  mov    %eax,-0x8(%ebp)
+0xf0409968:  mov    -0x8(%ebp),%eax
+0xf040996b:  add    %eax,-0x4(%ebp)
+0xf040996e:  mov    -0x8(%ebp),%ecx
+0xf0409971:  mov    -0x18(%ebp),%eax
+0xf0409974:  mov    -0x14(%ebp),%edx
+0xf0409977:  shld   %cl,%eax,%edx
+0xf040997a:  shl    %cl,%eax
+0xf040997c:  test   $0x20,%cl
+0xf040997f:  je     0xf0409985
+
+----------------
+IN: __clzdi2
+0xf0409985:  mov    %eax,-0x18(%ebp)
+0xf0409988:  mov    %edx,-0x14(%ebp)
+0xf040998b:  cmpl   $0xffff,-0x14(%ebp)
+0xf0409992:  ja     0xf040999b
+
+----------------
+IN: __clzdi2
+0xf0409994:  mov    $0x10,%eax
+0xf0409999:  jmp    0xf04099a0
+
+----------------
+IN: __clzdi2
+0xf04099a0:  mov    %eax,-0x8(%ebp)
+0xf04099a3:  mov    -0x8(%ebp),%eax
+0xf04099a6:  add    %eax,-0x4(%ebp)
+0xf04099a9:  mov    -0x8(%ebp),%ecx
+0xf04099ac:  mov    -0x18(%ebp),%eax
+0xf04099af:  mov    -0x14(%ebp),%edx
+0xf04099b2:  shld   %cl,%eax,%edx
+0xf04099b5:  shl    %cl,%eax
+0xf04099b7:  test   $0x20,%cl
+0xf04099ba:  je     0xf04099c0
+
+----------------
+IN: __clzdi2
+0xf0409a45:  mov    $0x2,%eax
+0xf0409a4a:  jmp    0xf0409a51
+
+----------------
+IN: __clzdi2
+0xf0409a51:  mov    %eax,-0x8(%ebp)
+0xf0409a54:  mov    -0x8(%ebp),%eax
+0xf0409a57:  add    %eax,-0x4(%ebp)
+0xf0409a5a:  mov    -0x8(%ebp),%ecx
+0xf0409a5d:  mov    -0x18(%ebp),%eax
+0xf0409a60:  mov    -0x14(%ebp),%edx
+0xf0409a63:  shld   %cl,%eax,%edx
+0xf0409a66:  shl    %cl,%eax
+0xf0409a68:  test   $0x20,%cl
+0xf0409a6b:  je     0xf0409a71
+
+----------------
+IN: __divmoddi4
+0xf0409e22:  add    $0x8,%esp
+0xf0409e25:  mov    %eax,%edx
+0xf0409e27:  mov    %ebx,%eax
+0xf0409e29:  sub    %edx,%eax
+0xf0409e2b:  add    $0x1,%eax
+0xf0409e2e:  mov    %al,-0x9(%ebp)
+0xf0409e31:  movsbl -0x9(%ebp),%ecx
+0xf0409e35:  mov    -0x30(%ebp),%eax
+0xf0409e38:  mov    -0x2c(%ebp),%edx
+0xf0409e3b:  shrd   %cl,%edx,%eax
+0xf0409e3e:  shr    %cl,%edx
+0xf0409e40:  test   $0x20,%cl
+0xf0409e43:  je     0xf0409e49
+
+----------------
+IN: __divmoddi4
+0xf0409e49:  mov    %eax,-0x18(%ebp)
+0xf0409e4c:  mov    %edx,-0x14(%ebp)
+0xf0409e4f:  movsbl -0x9(%ebp),%eax
+0xf0409e53:  mov    $0x40,%edx
+0xf0409e58:  mov    %edx,%ecx
+0xf0409e5a:  sub    %eax,%ecx
+0xf0409e5c:  mov    -0x30(%ebp),%eax
+0xf0409e5f:  mov    -0x2c(%ebp),%edx
+0xf0409e62:  shld   %cl,%eax,%edx
+0xf0409e65:  shl    %cl,%eax
+0xf0409e67:  test   $0x20,%cl
+0xf0409e6a:  je     0xf0409e70
+
+----------------
+IN: __divmoddi4
+0xf0409e6c:  mov    %eax,%edx
+0xf0409e6e:  xor    %eax,%eax
+0xf0409e70:  mov    %eax,-0x30(%ebp)
+0xf0409e73:  mov    %edx,-0x2c(%ebp)
+0xf0409e76:  movl   $0x0,-0x20(%ebp)
+0xf0409e7d:  movl   $0x0,-0x1c(%ebp)
+0xf0409e84:  jmp    0xf0409f09
+
+----------------
+IN: __divmoddi4
+0xf0409f09:  movzbl -0x9(%ebp),%eax
+0xf0409f0d:  mov    %eax,%edx
+0xf0409f0f:  sub    $0x1,%edx
+0xf0409f12:  mov    %dl,-0x9(%ebp)
+0xf0409f15:  test   %al,%al
+0xf0409f17:  jg     0xf0409e89
+
+----------------
+IN: __divmoddi4
+0xf0409e89:  mov    -0x18(%ebp),%eax
+0xf0409e8c:  mov    -0x14(%ebp),%edx
+0xf0409e8f:  shld   $0x1,%eax,%edx
+0xf0409e93:  add    %eax,%eax
+0xf0409e95:  mov    %eax,%ecx
+0xf0409e97:  mov    %edx,%ebx
+0xf0409e99:  mov    -0x30(%ebp),%eax
+0xf0409e9c:  mov    -0x2c(%ebp),%edx
+0xf0409e9f:  mov    %edx,%eax
+0xf0409ea1:  xor    %edx,%edx
+0xf0409ea3:  shr    $0x1f,%eax
+0xf0409ea6:  or     %ecx,%eax
+0xf0409ea8:  or     %ebx,%edx
+0xf0409eaa:  mov    %eax,-0x18(%ebp)
+0xf0409ead:  mov    %edx,-0x14(%ebp)
+0xf0409eb0:  mov    -0x30(%ebp),%eax
+0xf0409eb3:  mov    -0x2c(%ebp),%edx
+0xf0409eb6:  shld   $0x1,%eax,%edx
+0xf0409eba:  add    %eax,%eax
+0xf0409ebc:  mov    %eax,%ecx
+0xf0409ebe:  mov    %edx,%ebx
+0xf0409ec0:  mov    -0x20(%ebp),%eax
+0xf0409ec3:  mov    -0x1c(%ebp),%edx
+0xf0409ec6:  and    $0x1,%eax
+0xf0409ec9:  mov    $0x0,%edx
+0xf0409ece:  or     %ecx,%eax
+0xf0409ed0:  or     %ebx,%edx
+0xf0409ed2:  mov    %eax,-0x30(%ebp)
+0xf0409ed5:  mov    %edx,-0x2c(%ebp)
+0xf0409ed8:  mov    -0x38(%ebp),%eax
+0xf0409edb:  mov    -0x34(%ebp),%edx
+0xf0409ede:  sub    -0x18(%ebp),%eax
+0xf0409ee1:  sbb    -0x14(%ebp),%edx
+0xf0409ee4:  add    $0xffffffff,%eax
+0xf0409ee7:  adc    $0xffffffff,%edx
+0xf0409eea:  mov    %edx,%edx
+0xf0409eec:  sar    $0x1f,%edx
+0xf0409eef:  mov    %edx,%eax
+0xf0409ef1:  mov    %eax,-0x20(%ebp)
+0xf0409ef4:  mov    %edx,-0x1c(%ebp)
+0xf0409ef7:  mov    -0x38(%ebp),%eax
+0xf0409efa:  mov    -0x34(%ebp),%edx
+0xf0409efd:  and    -0x20(%ebp),%eax
+0xf0409f00:  and    -0x1c(%ebp),%edx
+0xf0409f03:  sub    %eax,-0x18(%ebp)
+0xf0409f06:  sbb    %edx,-0x14(%ebp)
+0xf0409f09:  movzbl -0x9(%ebp),%eax
+0xf0409f0d:  mov    %eax,%edx
+0xf0409f0f:  sub    $0x1,%edx
+0xf0409f12:  mov    %dl,-0x9(%ebp)
+0xf0409f15:  test   %al,%al
+0xf0409f17:  jg     0xf0409e89
+
+----------------
+IN: __divmoddi4
+0xf0409f1d:  cmpl   $0x0,0x18(%ebp)
+0xf0409f21:  je     0xf0409f31
+
+----------------
+IN: __divmoddi4
+0xf0409f31:  mov    -0x30(%ebp),%eax
+0xf0409f34:  mov    -0x2c(%ebp),%edx
+0xf0409f37:  shld   $0x1,%eax,%edx
+0xf0409f3b:  add    %eax,%eax
+0xf0409f3d:  mov    %eax,%ecx
+0xf0409f3f:  mov    %edx,%ebx
+0xf0409f41:  mov    -0x20(%ebp),%eax
+0xf0409f44:  mov    -0x1c(%ebp),%edx
+0xf0409f47:  and    $0x1,%eax
+0xf0409f4a:  mov    $0x0,%edx
+0xf0409f4f:  or     %ecx,%eax
+0xf0409f51:  or     %ebx,%edx
+0xf0409f53:  mov    -0x4(%ebp),%ebx
+0xf0409f56:  leave  
+0xf0409f57:  ret    
+
+----------------
 IN: karch_lapic_calibrate_clocks
 0xf0407c3a:  add    $0x10,%esp
 0xf0407c3d:  mov    %eax,%edx
@@ -29989,18 +30333,6 @@ IN: karch_lapic_mdelay
 0xf0407ebb:  call   0xf0407e57
 
 ----------------
-IN: karch_lapic_udelay
-0xf0407e6d:  call   0xf0405920
-
-----------------
-IN: 
-0xf0405920:  pause  
-
-----------------
-IN: 
-0xf0405922:  ret    
-
-----------------
 IN: karch_lapic_mdelay
 0xf0407ec0:  add    $0x10,%esp
 0xf0407ec3:  cmpl   $0x0,0x8(%ebp)
@@ -30102,72 +30434,6 @@ IN: karch_lapic_send_startup_ipi
 0xf0408f2f:  cmpl   $0x0,-0x18(%ebp)
 0xf0408f33:  je     0xf0408f3c
 
-CPU Reset (CPU 1)
-EAX=000f49ee EBX=00000000 ECX=00000000 EDX=00000001
-ESI=00000000 EDI=00000000 EBP=00000000 ESP=00006c5c
-EIP=000fd0ac EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-CS =0008 00000000 ffffffff 00cf9b00 DPL=0 CS32 [-RA]
-SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
-GDT=     000f6180 00000037
-IDT=     000f61be 00000000
-CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
-DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000 
-DR6=ffff0ff0 DR7=00000400
-CCS=00000000 CCD=00000004 CCO=EFLAGS
-EFER=0000000000000000
-FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
-FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
-FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
-FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
-FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
-XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
-XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
-XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
-XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
-----------------
-IN: 
-0x00008000:  cli    
-0x00008001:  mov    %cs,%ax
-0x00008003:  mov    %ax,%ds
-0x00008005:  nop    
-0x00008006:  mov    $0x68,%ax
-0x00008009:  nop    
-0x0000800a:  mov    $0x70,%bx
-0x0000800d:  mov    %ax,%di
-0x0000800f:  lgdtw  (%di)
-0x00008012:  mov    %bx,%di
-0x00008014:  lidtw  (%di)
-0x00008017:  mov    %cr0,%eax
-0x0000801a:  or     $0x1,%al
-0x0000801c:  mov    %eax,%cr0
-
-----------------
-IN: 
-0x0000801f:  mov    %cr4,%eax
-0x00008022:  or     $0x10,%eax
-0x00008026:  and    $0xffffff7f,%eax
-0x0000802c:  mov    %eax,%cr4
-
-----------------
-IN: 
-0x0000802f:  mov    0x66,%ax
-0x00008032:  shl    $0x10,%eax
-0x00008036:  mov    0x64,%ax
-0x00008039:  mov    %eax,%cr3
-
-----------------
-IN: 
-0x0000803c:  mov    %cr0,%eax
-0x0000803f:  or     $0x80000000,%eax
-0x00008045:  nop    
-0x00008046:  mov    %eax,%cr0
-
 ----------------
 IN: karch_lapic_send_startup_ipi
 0xf0408f3c:  addb   $0x1,-0x9(%ebp)
@@ -30199,12 +30465,34 @@ IN: karch_smp_start_ap
 0xf04094c6:  cmp    $0xea5f,%eax
 0xf04094cb:  jbe    0xf040948a
 
-----------------
-IN: 
-0x00008049:  mov    %cr4,%eax
-0x0000804c:  or     $0x80,%eax
-0x00008052:  mov    %eax,%cr4
-
+CPU Reset (CPU 1)
+EAX=000f49ee EBX=00000000 ECX=00000000 EDX=00000001
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00006c5c
+EIP=000fd0ac EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9b00 DPL=0 CS32 [-RA]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+GDT=     000f6180 00000037
+IDT=     000f61be 00000000
+CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000 
+DR6=ffff0ff0 DR7=00000400
+CCS=00000000 CCD=00000002 CCO=EFLAGS
+EFER=0000000000000000
+FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
 ----------------
 IN: karch_smp_start_ap
 0xf040948a:  sub    $0xc,%esp
@@ -30213,8 +30501,20 @@ IN: karch_smp_start_ap
 
 ----------------
 IN: 
-0x00008055:  nop    
-0x00008056:  ljmpl  $0x8,$0xf0408f50
+0x00008000:  cli    
+0x00008001:  mov    %cs,%ax
+0x00008003:  mov    %ax,%ds
+0x00008005:  nop    
+0x00008006:  mov    $0x68,%ax
+0x00008009:  nop    
+0x0000800a:  mov    $0x70,%bx
+0x0000800d:  mov    %ax,%di
+0x0000800f:  lgdtw  (%di)
+0x00008012:  mov    %bx,%di
+0x00008014:  lidtw  (%di)
+0x00008017:  mov    %cr0,%eax
+0x0000801a:  or     $0x1,%al
+0x0000801c:  mov    %eax,%cr0
 
 ----------------
 IN: karch_smp_start_ap
@@ -30224,6 +30524,38 @@ IN: karch_smp_start_ap
 0xf04094a1:  movzbl -0x1d(%ebp),%eax
 0xf04094a5:  cmp    %eax,%edx
 0xf04094a7:  jne    0xf04094bd
+
+----------------
+IN: 
+0x0000801f:  mov    %cr4,%eax
+0x00008022:  or     $0x10,%eax
+0x00008026:  and    $0xffffff7f,%eax
+0x0000802c:  mov    %eax,%cr4
+
+----------------
+IN: 
+0x0000802f:  mov    0x66,%ax
+0x00008032:  shl    $0x10,%eax
+0x00008036:  mov    0x64,%ax
+0x00008039:  mov    %eax,%cr3
+
+----------------
+IN: 
+0x0000803c:  mov    %cr0,%eax
+0x0000803f:  or     $0x80000000,%eax
+0x00008045:  nop    
+0x00008046:  mov    %eax,%cr0
+
+----------------
+IN: 
+0x00008049:  mov    %cr4,%eax
+0x0000804c:  or     $0x80,%eax
+0x00008052:  mov    %eax,%cr4
+
+----------------
+IN: 
+0x00008055:  nop    
+0x00008056:  ljmpl  $0x8,$0xf0408f50
 
 ----------------
 IN: 
@@ -30267,33 +30599,41 @@ IN: karch_smp_boot_ap32
 
 ----------------
 IN: karch_smp_boot_ap32
-0xf0409562:  mov    -0xc(%ebp),%eax
-0xf0409565:  mov    0x6c(%eax),%eax
-0xf0409568:  sub    $0x8,%esp
-0xf040956b:  push   $0xf040957b
-0xf0409570:  push   %eax
-0xf0409571:  call   0xf0405869
+0xf0409562:  call   0xf0405e44
+
+----------------
+IN: karch_smp_boot_ap32
+0xf0409567:  call   0xf040671c
+
+----------------
+IN: karch_smp_boot_ap32
+0xf040956c:  mov    -0xc(%ebp),%eax
+0xf040956f:  mov    0x6c(%eax),%eax
+0xf0409572:  sub    $0x8,%esp
+0xf0409575:  push   $0xf0409585
+0xf040957a:  push   %eax
+0xf040957b:  call   0xf0405869
 
 ----------------
 IN: karch_smp_init_ap32
-0xf040957b:  push   %ebp
-0xf040957c:  mov    %esp,%ebp
-0xf040957e:  sub    $0x18,%esp
-0xf0409581:  mov    $0xf040c060,%eax
-0xf0409586:  mov    (%eax),%eax
-0xf0409588:  mov    %eax,-0xc(%ebp)
-0xf040958b:  movl   $0xb8000,-0x10(%ebp)
-0xf0409592:  mov    -0xc(%ebp),%eax
-0xf0409595:  mov    %ax,0xf04206c6
-0xf040959b:  call   0xf040591c
+0xf0409585:  push   %ebp
+0xf0409586:  mov    %esp,%ebp
+0xf0409588:  sub    $0x18,%esp
+0xf040958b:  mov    $0xf040c060,%eax
+0xf0409590:  mov    (%eax),%eax
+0xf0409592:  mov    %eax,-0xc(%ebp)
+0xf0409595:  movl   $0xb8000,-0x10(%ebp)
+0xf040959c:  mov    -0xc(%ebp),%eax
+0xf040959f:  mov    %ax,0xf04206c6
+0xf04095a5:  call   0xf040591c
 
 ----------------
 IN: karch_smp_init_ap32
-0xf04095a0:  mov    -0xc(%ebp),%eax
-0xf04095a3:  movzbl %al,%eax
-0xf04095a6:  sub    $0xc,%esp
-0xf04095a9:  push   %eax
-0xf04095aa:  call   0xf04095d9
+0xf04095aa:  mov    -0xc(%ebp),%eax
+0xf04095ad:  movzbl %al,%eax
+0xf04095b0:  sub    $0xc,%esp
+0xf04095b3:  push   %eax
+0xf04095b4:  call   0xf04095d9
 
 ----------------
 IN: karch_smp_identify_cpu
@@ -30316,6 +30656,13 @@ IN: karch_smp_start_ap
 0xf04094b3:  call   0xf04053d7
 
 ----------------
+IN: karch_smp_identify_cpu
+0xf04095f2:  add    $0x10,%esp
+0xf04095f5:  mov    %eax,-0x14(%ebp)
+0xf04095f8:  cmpl   $0x0,-0x14(%ebp)
+0xf04095fc:  je     0xf040970d
+
+----------------
 IN: karch_set_cpu_init_flags
 0xf04053d7:  push   %ebp
 0xf04053d8:  mov    %esp,%ebp
@@ -30334,11 +30681,25 @@ IN: karch_set_cpu_init_flags
 0xf04053f7:  je     0xf0405413
 
 ----------------
-IN: karch_smp_identify_cpu
-0xf04095f2:  add    $0x10,%esp
-0xf04095f5:  mov    %eax,-0x14(%ebp)
-0xf04095f8:  cmpl   $0x0,-0x14(%ebp)
-0xf04095fc:  je     0xf040970d
+IN: karch_set_cpu_init_flags
+0xf04053f9:  mov    -0x4(%ebp),%eax
+0xf04053fc:  movzwl 0x74(%eax),%eax
+0xf0405400:  mov    0xc(%ebp),%edx
+0xf0405403:  or     %eax,%edx
+0xf0405405:  mov    -0x4(%ebp),%eax
+0xf0405408:  mov    %dx,0x74(%eax)
+0xf040540c:  mov    $0x1,%eax
+0xf0405411:  jmp    0xf0405418
+
+----------------
+IN: karch_set_cpu_init_flags
+0xf0405418:  leave  
+0xf0405419:  ret    
+
+----------------
+IN: karch_smp_start_ap
+0xf04094b8:  add    $0x10,%esp
+0xf04094bb:  jmp    0xf04094d6
 
 ----------------
 IN: karch_smp_identify_cpu
@@ -30373,27 +30734,6 @@ IN: karch_smp_identify_cpu
 0xf040963d:  je     0xf0409651
 
 ----------------
-IN: karch_set_cpu_init_flags
-0xf04053f9:  mov    -0x4(%ebp),%eax
-0xf04053fc:  movzwl 0x74(%eax),%eax
-0xf0405400:  mov    0xc(%ebp),%edx
-0xf0405403:  or     %eax,%edx
-0xf0405405:  mov    -0x4(%ebp),%eax
-0xf0405408:  mov    %dx,0x74(%eax)
-0xf040540c:  mov    $0x1,%eax
-0xf0405411:  jmp    0xf0405418
-
-----------------
-IN: karch_set_cpu_init_flags
-0xf0405418:  leave  
-0xf0405419:  ret    
-
-----------------
-IN: karch_smp_start_ap
-0xf04094b8:  add    $0x10,%esp
-0xf04094bb:  jmp    0xf04094d6
-
-----------------
 IN: karch_smp_identify_cpu
 0xf0409651:  mov    -0x1c(%ebp),%eax
 0xf0409654:  test   %eax,%eax
@@ -30412,7 +30752,29 @@ IN: karch_smp_identify_cpu
 0xf0409672:  push   %eax
 0xf0409673:  call   0xf040576b
 
-----------------
+CPU Reset (CPU 2)
+EAX=000f49ee EBX=00000000 ECX=00000000 EDX=00000002
+ESI=00000000 EDI=00000000 EBP=00000000 ESP=00006c5c
+EIP=000fd0ac EFL=00000006 [-----P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+CS =0008 00000000 ffffffff 00cf9b00 DPL=0 CS32 [-RA]
+SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+GDT=     000f6180 00000037
+IDT=     000f61be 00000000
+CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000 
+DR6=ffff0ff0 DR7=00000400
+CCS=00000004 CCD=00000003 CCO=EFLAGS
+EFER=0000000000000000
+FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000----------------
 IN: karch_smp_identify_cpu
 0xf0409678:  add    $0x10,%esp
 0xf040967b:  mov    -0x1c(%ebp),%eax
@@ -30425,10 +30787,30 @@ IN: karch_smp_identify_cpu
 0xf0409690:  cmpl   $0xf,-0xc(%ebp)
 0xf0409694:  je     0xf040969c
 
+
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
+XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
+XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
+XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
 ----------------
 IN: karch_smp_identify_cpu
 0xf0409696:  cmpl   $0x6,-0xc(%ebp)
 0xf040969a:  jne    0xf04096ab
+
+----------------
+IN: karch_smp_identify_cpu
+0xf040969c:  mov    -0x1c(%ebp),%eax
+0xf040969f:  shr    $0x10,%eax
+0xf04096a2:  shl    $0x4,%eax
+0xf04096a5:  movzbl %al,%eax
+0xf04096a8:  add    %eax,-0xc(%ebp)
+0xf04096ab:  mov    -0x1c(%ebp),%eax
+0xf04096ae:  shr    $0x8,%eax
+0xf04096b1:  and    $0xf,%eax
+0xf04096b4:  mov    %eax,-0x10(%ebp)
+0xf04096b7:  cmpl   $0xf,-0x10(%ebp)
+0xf04096bb:  jne    0xf04096c9
 
 ----------------
 IN: karch_smp_identify_cpu
@@ -30468,20 +30850,34 @@ IN: karch_smp_identify_cpu
 
 ----------------
 IN: karch_smp_identify_cpu
+0xf04096c9:  mov    -0x18(%ebp),%eax
+0xf04096cc:  mov    %eax,%edx
+0xf04096ce:  mov    -0x14(%ebp),%eax
+0xf04096d1:  mov    %dl,0x82(%eax)
+0xf04096d7:  mov    -0xc(%ebp),%eax
+0xf04096da:  mov    %eax,%edx
+0xf04096dc:  mov    -0x14(%ebp),%eax
+0xf04096df:  mov    %dl,0x84(%eax)
+0xf04096e5:  mov    -0x10(%ebp),%eax
+0xf04096e8:  mov    %eax,%edx
+0xf04096ea:  mov    -0x14(%ebp),%eax
+0xf04096ed:  mov    %dl,0x83(%eax)
+0xf04096f3:  mov    -0x28(%ebp),%edx
+0xf04096f6:  mov    -0x14(%ebp),%eax
+0xf04096f9:  mov    %edx,0x88(%eax)
+0xf04096ff:  mov    -0x24(%ebp),%edx
+0xf0409702:  mov    -0x14(%ebp),%eax
+0xf0409705:  mov    %edx,0x8c(%eax)
+0xf040970b:  jmp    0xf0409711
+
+----------------
+IN: karch_smp_identify_cpu
 0xf0409711:  leave  
 0xf0409712:  ret    
 
 ----------------
 IN: karch_smp_init_ap32
-0xf04095af:  add    $0x10,%esp
-0xf04095b2:  call   0xf0405e44
-
-----------------
-IN: karch_smp_init_ap32
-0xf04095b7:  call   0xf040671c
-
-----------------
-IN: karch_smp_init_ap32
+0xf04095b9:  add    $0x10,%esp
 0xf04095bc:  mov    -0xc(%ebp),%eax
 0xf04095bf:  lea    0x30(%eax),%edx
 0xf04095c2:  mov    -0xc(%ebp),%eax
@@ -30494,39 +30890,6 @@ IN: karch_smp_init_ap32
 0xf04095d6:  nop    
 0xf04095d7:  jmp    0xf04095d6
 
-----------------
-IN: karch_smp_init_ap32
-0xf04095d6:  nop    
-0xf04095d7:  jmp    0xf04095d6
-
-CPU Reset (CPU 2)
-EAX=000f49ee EBX=00000000 ECX=00000000 EDX=00000002
-ESI=00000000 EDI=00000000 EBP=00000000 ESP=00006c5c
-EIP=000fd0ac EFL=00000006 [-----P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-CS =0008 00000000 ffffffff 00cf9b00 DPL=0 CS32 [-RA]
-SS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-DS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-FS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-GS =0010 00000000 ffffffff 00cf9300 DPL=0 DS   [-WA]
-LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
-GDT=     000f6180 00000037
-IDT=     000f61be 00000000
-CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
-DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000 
-DR6=ffff0ff0 DR7=00000400
-CCS=00000004 CCD=00000003 CCO=EFLAGS
-EFER=0000000000000000
-FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
-FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
-FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
-FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
-FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
-XMM00=0000000000000000 0000000000000000 XMM01=0000000000000000 0000000000000000
-XMM02=0000000000000000 0000000000000000 XMM03=0000000000000000 0000000000000000
-XMM04=0000000000000000 0000000000000000 XMM05=0000000000000000 0000000000000000
-XMM06=0000000000000000 0000000000000000 XMM07=0000000000000000 0000000000000000
 CPU Reset (CPU 3)
 EAX=000f49ee EBX=00000000 ECX=00000000 EDX=00000003
 ESI=00000000 EDI=00000000 EBP=00000000 ESP=00006c5c
@@ -30544,7 +30907,7 @@ IDT=     000f61be 00000000
 CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
 DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000 
 DR6=ffff0ff0 DR7=00000400
-CCS=00000000 CCD=00000002 CCO=EFLAGS
+CCS=00000000 CCD=00000004 CCO=EFLAGS
 EFER=0000000000000000
 FCW=037f FSW=0000 [ST=0] FTW=00 MXCSR=00001f80
 FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
@@ -30580,6 +30943,21 @@ IN: karch_smp_start_ap
 0xf0409515:  sub    $0xc,%esp
 0xf0409518:  push   %eax
 0xf0409519:  call   0xf04095d9
+
+----------------
+IN: karch_smp_init_ap32
+0xf04095d6:  nop    
+0xf04095d7:  jmp    0xf04095d6
+
+----------------
+IN: karch_smp_init_ap32
+0xf04095d6:  nop    
+0xf04095d7:  jmp    0xf04095d6
+
+----------------
+IN: karch_smp_init_ap32
+0xf04095d6:  nop    
+0xf04095d7:  jmp    0xf04095d6
 
 ----------------
 IN: karch_smp_start_ap
