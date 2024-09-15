@@ -19,6 +19,14 @@
         "i8253.h": "c",
         "idt.h": "c",
         "i8259.h": "c",
-        "apic_idt.h": "c"
+        "apic_idt.h": "c",
+        "tables.h": "c",
+        "env.h": "c",
+        "taskseg.h": "c",
+        "k86.h": "c",
+        "kstring.h": "c",
+        "bootinfo.h": "c",
+        "paging.h": "c",
+        "apic.h": "c"
     }
 }

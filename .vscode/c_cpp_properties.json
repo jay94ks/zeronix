@@ -4,9 +4,10 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/kernel/**",
-                "${workspaceFolder}/kernel/include/**",
-                "${workspaceFolder}/kernel/include"
+                "${workspaceFolder}/inc/**",
+                "${workspaceFolder}/inc",
+                "${workspaceFolder}/kernel/arch/x86/inc"
+                
             ],
             "defines": [
                 "_DEBUG",

@@ -1,65 +1,44 @@
 CURRENT_PATH = $(shell pwd)
-TARGET_MODULE = $(CURRENT_PATH)/main.ko
-TARGET_ARCH = x86
+TARGET_ARCH=x86
+
+MODS=$(shell find ./arch/$(TARGET_ARCH)/ -name Makefile | sort)
+KERNEL=$(shell find ./mods/ -name Makefile | sort)
+
+MODS += $(KERNEL)
+
+TEMP=$(subst /Makefile,,${MODS})
+KO_FILES=$(patsubst %, %.ko, $(TEMP))
 
 KERNEL_IMAGE = $(CURRENT_PATH)/kernel.elf
+ARCH_DIR = $(CURRENT_PATH)/arch/$(TARGET_ARCH)
+include $(ARCH_DIR)/toolchain.mk
 
-include $(CURRENT_PATH)/arch/$(TARGET_ARCH)/toolchain.inc
+.SUFFIXES: .c .cpp .asm .ko
 
-SRCS_CC		= $(shell find ./src/ -name "*.c" | sort)
-SRCS_ASM	= $(shell find ./src/ -name "*.asm" | sort)
-SRCS_CXX	= $(shell find ./src/ -name "*.cpp" | sort)
-
-OBJS  = $(SRCS_ASM:.asm=.asm.o)
-OBJS += $(SRCS_CC:.c=.c.o)
-OBJS += $(SRCS_CXX:.cpp=.cpp.o)
-
-KCRT_DIR = $(CURRENT_PATH)/kcrt
-KERN_KO = $(ARCH_DIR)/arch.ko $(KCRT_DIR)/kcrt.ko
-
-MAKEOPT = TARGET_ARCH=$(TARGET_ARCH)
-
-default:
-	$(MAKE) $(KERNEL_IMAGE)
+default: $(KERNEL_IMAGE) $(KERNEL_IMAGE).dump
 
 debug: 
 	$(MAKE) clean
 	$(MAKE) debug-2nd
 	
-debug-2nd: $(KERNEL_IMAGE)
-	@if [ -f ./qemu-debug-log ]; then rm ./qemu-debug.log; fi
+debug-2nd: $(KERNEL_IMAGE) $(KERNEL_IMAGE).dump
+	@if [ -f ./qemu-debug.log ]; then rm ./qemu-debug.log; fi
 	qemu-system-i386 -D ./qemu-debug.log -d cpu_reset,in_asm -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE) -s -S
 
 run: $(KERNEL_IMAGE)
-	@if [ -f ./qemu-debug-log ]; then rm ./qemu-debug.log; fi
+	@if [ -f ./qemu-debug.log ]; then rm ./qemu-debug.log; fi
 	qemu-system-i386 -D ./qemu-debug.log -d cpu_reset,in_asm -m 256M -smp sockets=1,cores=2,threads=2 -kernel $(KERNEL_IMAGE)
 
 clean:
 	@find . -type f -name "*.o" -exec rm {} \;
 	@find . -type f -name "*.o.tmp" -exec rm {} \;
-	@if [ -f $(TARGET_MODULE) ]; then rm $(TARGET_MODULE); fi
-	$(MAKE) $(MAKEOPT) -C $(ARCH_DIR)/ clean
-	$(MAKE) $(MAKEOPT) -C $(KCRT_DIR)/ clean
+	@find . -type f -name "*.ko" -exec rm {} \;
 
-$(TARGET_MODULE): $(OBJS)
-	$(LD) -r $(shell find . -name "*.o" | sort) -o $(TARGET_MODULE)
+%.ko: %
+	$(MAKE) ARCH_DIR=$(ARCH_DIR) -C $<
 
-$(KERNEL_IMAGE): $(TARGET_MODULE) $(KERN_KO)
-	$(LD) -T $(LDSCRIPT) $(KERN_KO) $(TARGET_MODULE) -o $(KERNEL_IMAGE)
+$(KERNEL_IMAGE): $(KO_FILES)
+	$(LD) -T $(LDSCRIPT) $(KO_FILES) -o $(KERNEL_IMAGE)
+
+$(KERNEL_IMAGE).dump: $(KERNEL_IMAGE)
 	$(OBJDUMP) -M intel -D $(KERNEL_IMAGE) > $(KERNEL_IMAGE).dump
-
-$(ARCH_DIR)/arch.ko:
-	$(MAKE) $(MAKEOPT) -C $(ARCH_DIR)/
-
-$(KCRT_DIR)/kcrt.ko:
-	$(MAKE) $(MAKEOPT) -C $(KCRT_DIR)/
-	
-%.c.o: %.c
-	echo $(ARCH_DIR)
-	$(CC) -c $< $(CFLAGS) -o $@
-
-%.asm.o: %.asm
-	$(NASM) $(NASMFLAGS) $< -o $@
-
-%.cpp.o: %.cpp
-	$(CXX) -c $< $(CXXFLAGS) -o $@

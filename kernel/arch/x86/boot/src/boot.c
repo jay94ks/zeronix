@@ -1,20 +1,20 @@
 #include <zeronix/types.h>
-#include <zeronix/boot.h>
-#include <zeronix/arch/x86/i686.h>
-#include <zeronix/arch/x86/multiboot.h>
-#include <zeronix/arch/x86/bootenv.h>
+#include <x86/boot/multiboot.h>
+#include <x86/boot/bootinfo.h>
+#include <x86/boot/bootenv.h>
+#include <x86/k86/paging.h>
 #include "tpg.h"
 
 // --
 static uint32_t pagedir[I686_VM_DIR_ENTRIES] __aligned(4096);
-kbootinfo_t temp_bootinfo;
+bootinfo_t temp_bootinfo;
 
 // --
 void kboot_panic(const char* text);
-void kboot_read_mbinfo(kbootinfo_t* boot, mbinfo_t* info);
-void kboot_add_mmap(kbootinfo_t* boot, mb_mmap_t* mmap);
-void kboot_tpg_identity(kbootinfo_t* info);
-void kboot_tpg_map_kernel(kbootinfo_t* info);
+void kboot_read_mbinfo(bootinfo_t* boot, mbinfo_t* info);
+void kboot_add_mmap(bootinfo_t* boot, mb_mmap_t* mmap);
+void kboot_tpg_identity(bootinfo_t* info);
+void kboot_tpg_map_kernel(bootinfo_t* info);
 void kboot_tpg_enable_paging();
 
 // --> 4K address mask. because i686 manages address space in 4k unit.
@@ -35,12 +35,12 @@ enum {
  * initialize the kernel's boot stage.
  * this make temporary page mappings to jump to `karch_init`.
  */
-kbootinfo_t* kboot(uint32_t magic, uint32_t ebx) {
+bootinfo_t* kboot(uint32_t magic, uint32_t ebx) {
     if (magic != MULTIBOOT_LOADER_MAGIC) {
         kboot_panic("panic: multiboot magic mismatch.\n");
     }
 
-    kbootinfo_t* boot = &temp_bootinfo;
+    bootinfo_t* boot = &temp_bootinfo;
 
     kboot_read_mbinfo(boot, (mbinfo_t*) ebx);
     kboot_tpg_identity(boot);
@@ -63,26 +63,16 @@ void kboot_panic(const char* text) {
     while(1);
 }
 
-void kboot_read_mbinfo(kbootinfo_t* boot, mbinfo_t* info) {
+void kboot_read_mbinfo(bootinfo_t* boot, mbinfo_t* info) {
     boot->mem_high_phys = 0;
     boot->pagedir = pagedir;
     boot->freepde = 0;
-
-    boot->kern_virt_base = mb_virt_base;
-    boot->kern_virt.addr = mb_start;
-    boot->kern_virt.len = mb_end;
-
-    boot->bootstrap.addr = mb_unpaged_start;
-    boot->bootstrap.len = mb_unpaged_end - mb_unpaged_start;
 
     if ((info->flags & MBINFO_CMDLINE) != 0) {
         // TODO: parse command line.
     }
 
-    // --> kernel size. bootstrap region will be freed soon.
-    boot->kern_alloc = mb_size - boot->bootstrap.len;
-    boot->kern_alloc_dyn = 0;
-    boot->mmap_cnt = 0;
+    boot->mmap_n = 0;
 
     // --> put all memory map here.
     if ((info->flags & MBINFO_MEM_MAP) != 0) {
@@ -116,7 +106,7 @@ void kboot_read_mbinfo(kbootinfo_t* boot, mbinfo_t* info) {
     }
 }
 
-void kboot_add_mmap(kbootinfo_t* boot, mb_mmap_t* mmap) {
+void kboot_add_mmap(bootinfo_t* boot, mb_mmap_t* mmap) {
     uint32_t addr = mmap->addr;
     uint32_t end_addr = addr + mmap->len;
     
@@ -142,8 +132,8 @@ void kboot_add_mmap(kbootinfo_t* boot, mb_mmap_t* mmap) {
         return;
     }
 
-    uint32_t n = boot->mmap_cnt++;
-    if (n >= KBOOT_MAX_MEMMAP) {
+    uint32_t n = boot->mmap_n++;
+    if (n >= BOOTINFO_MAX_MEMMAP) {
         kboot_panic("panic: no mmap slot available.\n");
     }
 
@@ -159,7 +149,7 @@ void kboot_add_mmap(kbootinfo_t* boot, mb_mmap_t* mmap) {
     }
 }
 
-void kboot_tpg_identity(kbootinfo_t* info) {
+void kboot_tpg_identity(bootinfo_t* info) {
     /* identity mapping. */
     for(uint32_t i = 0; i < I686_VM_DIR_ENTRIES; ++i) {
         uint32_t flags 
@@ -177,7 +167,7 @@ void kboot_tpg_identity(kbootinfo_t* info) {
     }
 }
 
-void kboot_tpg_map_kernel(kbootinfo_t* info) {
+void kboot_tpg_map_kernel(bootinfo_t* info) {
     uint32_t mapped = 0, phys = mb_phys_base;
     uint32_t pde = mb_virt_base / I686_BIG_PAGE_SIZE;
 
