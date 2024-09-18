@@ -5,8 +5,9 @@
 #include <x86/k86/cpulocal.h>
 
 // --
-void karch_emergency_print(const char* msg);
+
 void karch_enter_kmain();
+void karch_emergency_print(const char* msg);
 
 // --> defined at head.asm.
 extern void jump_to_kmain();

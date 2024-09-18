@@ -26,4 +26,9 @@ typedef unsigned long long  uint64_t;
  */
 typedef uint32_t            size_t;
 
+/**
+ * special values.
+ */
+#define NULL                0
+
 #endif

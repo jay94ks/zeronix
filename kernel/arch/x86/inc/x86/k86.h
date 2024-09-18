@@ -16,11 +16,6 @@ extern "C" {
  * this is for initializing the early x86 environment.
  */
 void karch_k86_init(bootinfo_t* info);
-
-/**
- * get the boot information.
- */
-bootinfo_t* karch_k86_bootinfo();
 #endif
 
 #ifdef __cplusplus

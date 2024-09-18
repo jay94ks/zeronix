@@ -42,4 +42,21 @@
 #define CPUID1_EDX_SSE_FULL (CPUID1_EDX_FXSR | CPUID1_EDX_SSE | CPUID1_EDX_SSE2)
 #define CPUID1_ECX_SSE_FULL (CPUID1_ECX_SSE3 | CPUID1_ECX_SSSE3 | CPUID1_ECX_SSE4_1 | CPUID1_ECX_SSE4_2)
 
+/* Old BIOS areas. */
+
+#define BIOS_OLD_BDA_START  0x00000000
+#define BIOS_OLD_BDA_END    (0x000004ff + 1)
+
+#define BIOS_EBDA_START     0x00080000
+#define BIOS_EBDA_END       (0x0009ffff + 1)
+
+#define BIOS_VIDEO_START    0x000a0000
+#define BIOS_VIDEO_END      (0x000c7fff + 1)
+
+#define BIOS_EXPAN_START    0x000c8000
+#define BIOS_EXPAN_END      (0x000effff + 1)
+
+#define BIOS_BOARD_START    0x000f0000
+#define BIOS_BOARD_END      (0x000fffff + 1)
+
 #endif

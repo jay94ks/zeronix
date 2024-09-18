@@ -27,6 +27,9 @@
         "kstring.h": "c",
         "bootinfo.h": "c",
         "paging.h": "c",
-        "apic.h": "c"
+        "apic.h": "c",
+        "cpulocal.h": "c",
+        "smp.h": "c",
+        "mmap.h": "c"
     }
 }

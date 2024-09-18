@@ -7,6 +7,7 @@
 #include <x86/k86/tables.h>
 #include <x86/k86/taskseg.h>
 #include <x86/k86/paging.h>
+#include <x86/k86/mmap.h>
 
 #include <x86/legacy/i8259.h>
 #include <x86/legacy/except.h>
@@ -18,21 +19,10 @@
 #include <zeronix/kstring.h>
 
 // --
-bootinfo_t k86_bootinfo;
-
-// --
-bootinfo_t* karch_k86_bootinfo() {
-    return &k86_bootinfo;
-}
-
-// --
 void karch_k86_load_segs();
 
 // --
 void karch_k86_init(bootinfo_t* info) {
-    kmemcpy(&k86_bootinfo, info, sizeof(k86_bootinfo));
-    info = &k86_bootinfo;
-
     // --> initialize GDT and TSS.
     karch_tables_init();
     karch_taskseg_init();
@@ -56,12 +46,14 @@ void karch_k86_init(bootinfo_t* info) {
 
     // --> re-initialize early paging.
     //   : after this call, bootstrap code is not needed anymore.
-    karch_paging_early_init();
+    karch_paging_early_init(info);
+    karch_mmap_init(info);
 
     // --> initialize the ACPI.
     if (karch_acpi_init()) {
         karch_apic_init();
     }
+
 }
 
 /**

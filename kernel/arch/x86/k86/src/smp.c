@@ -4,7 +4,6 @@
 #include <x86/env.h>
 #include <x86/k86.h>
 
-#include <x86/boot/bootinfo.h>
 #include <x86/k86/tables.h>
 #include <x86/k86/taskseg.h>
 #include <x86/k86/paging.h>
@@ -187,10 +186,6 @@ uint32_t karch_smp_prepare_ap_entry() {
     uint32_t lowmem = SMP_AP_ENTRY_COPY_ADDR;
 
     karch_tables_get_descriptors(&desc);
-
-    //karch_desc_t* idt = karch_get_idt_ptr();
-    //karch_desc_t* gdt = karch_get_gdt_ptr();
-    bootinfo_t* boot = karch_k86_bootinfo();
 
     smp_ap_id = 0;
     smp_ap_pt = (uint32_t) PAGE_DIR_ADDR; // --> share BSP's page table.

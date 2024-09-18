@@ -2,6 +2,9 @@
 #define __KERNEL_ARCH_X86_INC_X86_K86_PAGING_H__
 
 #include <x86/types.h>
+#ifdef __ARCH_X86_INTERNALS__
+#include <x86/boot/bootinfo.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,7 +19,7 @@ extern "C" {
  * initialize the `karch`.
  * --> implemented in `k86/src/paging/early.c`.
  */
-void karch_paging_early_init();
+void karch_paging_early_init(bootinfo_t* info);
 
 #endif
 

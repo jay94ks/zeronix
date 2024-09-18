@@ -10,11 +10,9 @@
 // --
 void karch_page_identity(uint32_t* pagedir, bootinfo_t* info);
 void karch_page_remap_kernel(uint32_t* pagedir, bootinfo_t* info);
-void karch_page_reenable();
 
 // --
-void karch_paging_early_init() {
-    bootinfo_t* info = karch_k86_bootinfo();
+void karch_paging_early_init(bootinfo_t* info) {
     uint32_t* kern_pagedir = (uint32_t*) PAGE_DIR_ADDR;
 
     karch_page_identity(kern_pagedir, info);
