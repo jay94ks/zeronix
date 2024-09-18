@@ -43,7 +43,7 @@ global karch_except_18;
     .all:
         ; --> compute frame pointer.
         mov eax, ebp
-        sub eax, 12
+        add eax, 8
 
         ; call karch_except(uint32_t n, uint32_t k, karch_except_frame_t* frame).
         push eax        ; --> frame.

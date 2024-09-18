@@ -14,12 +14,16 @@ karch_irq_ovr_t* irq_ovrs[MAX_IRQ];
 karch_irq_ovr_t irq_default;
 uint32_t irq_reg_val;
 
+// --> interrupt frames.
+karch_intr_frame_t* smp_intr_frame[MAX_CPU];
+
 /**
  * IRQ 0 ~ 16: legacy IRQs.
  */
 
 // -- 
 void karch_irq_init() {
+    kmemset(smp_intr_frame, 0, sizeof(smp_intr_frame));
     kmemset(irq_registry, 0, sizeof(irq_registry));
     kmemset(irq_ovrs, 0, sizeof(irq_ovrs));
     irq_default.mask = karch_irq_mask_phys;
@@ -28,6 +32,24 @@ void karch_irq_init() {
 
 uint8_t karch_irq_count() {
     return MAX_IRQ;
+}
+
+karch_intr_frame_t* karch_irq_get_frame() {
+    int16_t cpu_n = karch_smp_cpuid();
+    if (cpu_n < 0) {
+        cpu_n = 0;
+    }
+
+    return smp_intr_frame[cpu_n];
+}
+
+void karch_irq_set_frame(karch_intr_frame_t* frame) {
+    int16_t cpu_n = karch_smp_cpuid();
+    if (cpu_n < 0) {
+        cpu_n = 0;
+    }
+
+    smp_intr_frame[cpu_n] = frame;
 }
 
 void karch_irq_dispatch(uint8_t n) {

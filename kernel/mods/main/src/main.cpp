@@ -18,7 +18,7 @@ extern "C" void kmain() {
     karch_interface(&arch);
 
     systick.handler = onSysTick;
-    karch_irq_register(IRQN_SYSTICK, &systick);
+    arch.irq.reg(IRQN_SYSTICK, &systick);
 }
 
 void onSysTick(karch_irq_t* irq) {

@@ -23,20 +23,57 @@ struct __karch_irq_t {
 
 typedef struct __karch_irq_t karch_irq_t;
 
-/* get irq count. */
-uint8_t karch_irq_count();
+/**
+ * interrupt frame.
+typedef struct {
+    union {
+        struct {
+            uint32_t err;
 
-/* register an IRQ handler. */
-uint8_t karch_irq_register(uint8_t n, karch_irq_t* irq);
+            uint32_t ip;
+            uint32_t cs;
+            uint32_t flags;
 
-/* unregister an IRQ handler. */
-uint8_t karch_irq_unregister(karch_irq_t* irq);
+            uint32_t sp;
+            uint32_t ss;
+            
+        } error;
+        struct {
+            uint32_t xx;
 
-/* mask an IRQ. */
-void karch_irq_mask(uint8_t n);
+            uint32_t ip;
+            uint32_t cs;
+            uint32_t flags;
 
-/* unmask an IRQ. */
-void karch_irq_unmask(uint8_t n);
+            uint32_t sp;
+            uint32_t ss;
+        } normal;
+    };
+} karch_irq_frame_t;
+ */
+
+/**
+ * karch IRQ device. 
+ */
+typedef struct {
+    /* total IRQ count. */
+    uint8_t count;
+
+    /* register an IRQ handler. */
+    uint8_t (*reg)(uint8_t n, karch_irq_t* irq);
+
+    /* unregister an IRQ handler. */
+    uint8_t (*unreg)(karch_irq_t* irq);
+
+    /* mask an IRQ. */
+    void (*mask)(uint8_t n);
+
+    /* unmask an IRQ. */
+    void (*unmask)(uint8_t n);
+
+    /* get the current interrupt frame. */
+    //void* (*get_frame)(karch_irq_frame_t*);
+} karch_irqdev_t;
 
 
 #ifdef __cplusplus

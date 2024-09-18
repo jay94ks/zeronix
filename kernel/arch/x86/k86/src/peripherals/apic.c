@@ -11,6 +11,7 @@
 #include <x86/k86/tables.h>
 #include <x86/legacy/i8253.h>
 #include <x86/legacy/i8259.h>
+#include <x86/smp.h>
 
 #include <zeronix/kstring.h>
 
@@ -468,6 +469,8 @@ uint8_t karch_lapic_eoi() {
  * `n` value: refer `gv_apic_hw`.
 */
 void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+    karch_irq_intr_begin(frame);
+
     if (n <= MAX_IOAPIC_IRQ && ioapic_irq[n].apic) {
         uint8_t ovr = GET_IRQ_OVR(ioapic_irq_ovr[n]);
 
@@ -489,6 +492,8 @@ void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
     if (!k) {
         // --> switch to user if possible.
     }
+
+    karch_irq_intr_end();
 }
 
 /**
@@ -496,6 +501,8 @@ void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
  * `n` value: refer `gv_apic_zb`.
 */
 void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+    karch_irq_intr_begin(frame);
+
     if (n >= 0xf0 && n <= 0xff) {
         karch_irq_mask(n);
         karch_irq_dispatch(n);
@@ -504,6 +511,8 @@ void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
 
     // --> emit EIO to Local APIC.
     karch_lapic_eoi();
+    karch_irq_intr_end();
+    
     if (!k) {
         // --> switch to user if possible.
     }

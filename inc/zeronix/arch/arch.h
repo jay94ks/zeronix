@@ -4,6 +4,7 @@
 #include <zeronix/types.h>
 #include <zeronix/arch/smp.h>
 #include <zeronix/arch/mmap.h>
+#include <zeronix/arch/irq.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,6 +24,9 @@ typedef struct {
 
     /* SMP interface. */
     karch_smp_t smp;
+
+    /* IRQ device.*/
+    karch_irqdev_t irq;
     
     /* SYSTICK frequency in hz. */
     uint32_t systick_freq;

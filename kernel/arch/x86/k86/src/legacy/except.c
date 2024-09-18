@@ -1,5 +1,6 @@
 #define __ARCH_X86_INTERNALS__ 1
 #include <x86/legacy/except.h>
+#include <x86/k86/irq.h>
 #include <x86/k86/tables.h>
 #include <x86/klib.h>
 
@@ -53,60 +54,22 @@ static const struct gatevec gv_except[] = {
     GATEVEC_NULL
 };
 
-// --
-karch_except_cb_t except_cb[MAX_EXCEPT_CB];
-void* except_cb_data[MAX_EXCEPT_CB];
 
 // --
 void karch_except_init() {
-    kmemset(except_cb, 0, sizeof(except_cb));
-    kmemset(except_cb_data, 0, sizeof(except_cb_data));
-
     // --> map exception handler vectors.
     karch_tables_load_idt(gv_except, 0);
 }
 
-uint8_t karch_except_get_handler(karch_except_irq_t n, karch_except_cb_t* cb, void** data) {
-    if (n > MAX_EXCEPT_CB || n == 15) {
-        return 0;
-    }
+void karch_except(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+    karch_irq_intr_begin(frame);
 
-    if (cb) {
-        *cb = except_cb[n];
-    }
+    uint8_t irqn = n + IRQ_EXCEPTION_OFFSET;
+    karch_irq_dispatch(irqn);
 
-    if (data) {
-        *data = except_cb_data[n];
-    }
-
-    return 1;
-}
-
-uint8_t karch_except_set_handler(karch_except_irq_t n, karch_except_cb_t cb, void* data) {
-    if (n > MAX_EXCEPT_CB || n == 15) {
-        return 0;
-    }
-
-    except_cb[n] = cb;
-    except_cb_data[n] = data;
-
-    return 1;
-}
-
-void karch_except(uint32_t n, uint32_t k, karch_except_frame_t* frame) {
-    if (except_cb[n]) {
-        karch_except_t e;
-
-        e.n = n;
-        e.k = k;
-        e.frame = frame;
-        e.data = except_cb_data[n];
-
-        except_cb[n](&e);
-    }
-
-    
+    karch_irq_intr_end();
     if (!k) {
         // --> switch to user if possible.
     }
+
 }

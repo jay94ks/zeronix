@@ -40,7 +40,7 @@ extern karch_i8259_hwint;
     .all:
         ; --> compute frame pointer.
         mov eax, ebp
-        sub eax, 12
+        add eax, 8
 
         ; call karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame).
         push eax        ; --> frame.

@@ -57,8 +57,9 @@ int16_t smp_ap_probe;           // --> probe to detect AP's boot completion.
 uint8_t smp_ready_n;
 
 // --
-karch_spinlock_t smp_cpu_lock[MAX_CPU]; // --> spinlocks for each CPUs.
-karch_cpuinfo_t smp_cpu_ident[MAX_CPU]; // --> SMP CPU identification.
+karch_spinlock_t smp_cpu_lock[MAX_CPU];             // --> spinlocks for each CPUs.
+karch_cpuinfo_t smp_cpu_ident[MAX_CPU];             // --> SMP CPU identification.
+
 uint8_t smp_ready_bitmap[SMP_READY_BITMAP_BYTES];
 uint8_t smp_jump_bitmap[SMP_READY_BITMAP_BYTES];
 uint8_t smp_bsp_id;
