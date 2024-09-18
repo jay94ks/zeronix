@@ -130,10 +130,47 @@ struct karch_x86_acpi_madt_nmi {
     uint32_t                intr;   // --> global interrupt.
 } __packed;
 
+/**
+ * https://uefi.org/sites/default/files/resources/ACPI_6_3_final_Jan30.pdf
+ * page. 155.
+ */
+struct karch_x86_acpi_madt_intsrc {
+    karch_acpi_madt_item_t  hdr;
+    uint8_t bus;    // --> constant, zero. --> ISA.
+    uint8_t source; // --> bus relative IRQn.
+    uint32_t global_intr;   // --> how it remapped as.
+    
+    uint16_t flags;
+} __packed;
+
+#define ACPI_INTSRC_GET_POLARITY(x)     ((x) & 0x03)
+#define ACPI_INTSRC_GET_TRIGGER_MODE(x) (((x) >> 2) & 0x03)
+
 /* shorthands. */
 typedef struct karch_x86_acpi_madt_lapic karch_acpi_madt_lapic_t;
 typedef struct karch_x86_acpi_madt_ioapic karch_acpi_madt_ioapic_t;
 typedef struct karch_x86_acpi_madt_nmi karch_acpi_madt_nmi_t;
+typedef struct karch_x86_acpi_madt_intsrc karch_acpi_madt_intsrc_t;
+
+/**
+ * polarity flags: ACPI_INTSRC_GET_POLARITY(x).
+ */
+typedef enum {
+    INTSRC_POL_BUSSPEC = 0,
+    INTSRC_POL_ACTIVEHIGH = 1,
+    INTSRC_POL_RESERVED = 2,
+    INTSRC_POL_ACTIVELOW = 3
+} karch_acpi_intsrc_polarity_t;
+
+/**
+ * polarity flags: ACPI_INTSRC_GET_POLARITY(x).
+ */
+typedef enum {
+    INTSRC_TRG_BUSSPEC = 0,
+    INTSRC_TRG_EDGE = 1,
+    INTSRC_TRG_RESERVED = 2,
+    INTSRC_TRG_LEVEL = 3
+} karch_acpi_intsrc_trigger_t;
 
 /**
  * karch_x86_acpi_gaddr.
@@ -311,5 +348,4 @@ uint8_t karch_acpi_poweroff();
 #ifdef __cplusplus
 }
 #endif
-
 #endif

@@ -4,6 +4,7 @@
 
 #include <x86/boot/bootinfo.h>
 
+#include <x86/k86/irq.h>
 #include <x86/k86/tables.h>
 #include <x86/k86/taskseg.h>
 #include <x86/k86/paging.h>
@@ -27,6 +28,9 @@ extern void jump_to_kmain();
 
 // --
 void karch_k86_init(bootinfo_t* info) {
+    // --> initialize IRQ hooks.
+    karch_irq_init();
+
     // --> initialize GDT and TSS.
     karch_tables_init();
     karch_taskseg_init();

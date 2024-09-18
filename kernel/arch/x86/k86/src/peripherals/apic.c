@@ -7,6 +7,7 @@
 #include <x86/spinlock.h>
 #include <x86/klib.h>
 
+#include <x86/k86/irq.h>
 #include <x86/k86/tables.h>
 #include <x86/legacy/i8253.h>
 #include <x86/legacy/i8259.h>
@@ -105,6 +106,7 @@ void karch_apic_zbint_fe();
 void karch_apic_zbint_ff();
 #endif
 
+#define APIC_HW_IRQ_VECTOR_OFFSET       0x50
 static const struct gatevec gv_apic_hw[] = {
     { karch_apic_hwint_00,  0, PRIV_KERN },
     { karch_apic_hwint_01,  1, PRIV_KERN },
@@ -194,18 +196,27 @@ static const struct gatevec gv_apic_bsp[] = {
 };
 
 // --
+#define MAKE_IRQ_OVR(irq, pol, trg)     ((irq) | ((pol) << 8) | ((trg) << 10))
+#define GET_IRQ_OVR(ovr)                ((ovr) & 0xff)
+#define GET_IRQ_POL(ovr)                (((ovr) >> 8) && 0x03)
+#define GET_IRQ_TRG(ovr)                (((ovr) >> 10) && 0x03)
+
+// --
 uint8_t apic_supported;
 karch_lapic_info_t lapic_info;
 
 // --
 karch_ioapic_t ioapic[MAX_IOAPIC];
 karch_ioapic_irq_t ioapic_irq[MAX_IOAPIC_IRQ];
+uint16_t ioapic_irq_ovr[MAX_IOAPIC_IRQ];    // --> stores POL (2), TRG (2), SRC_INTR (8).
+uint8_t ioapic_irq_rvo[MAX_IOAPIC_IRQ];     // --> stores GBL_INTR.
 uint8_t ioapic_n;
 
 // --
 karch_lapic_t lapic[MAX_CPU];
 uint8_t lapic_map[0xff + 1];        // --> for fast mapping: lapic_map[n] == LAPIC_ID.
 uint8_t lapic_n;
+uint8_t lapic_bsp;
 
 // --
 uint32_t lapic_probe;               // --> probe to count ticks.
@@ -232,7 +243,7 @@ void karch_apic_collect();
 uint8_t karch_apic_exists();
 
 void karch_lapic_calibrate_clocks(uint8_t n);
-void karch_lapic_i8259_handler(const karch_i8259_t* t);
+void karch_lapic_irq_handler(karch_irq_t* t);
 // --
 
 uint8_t karch_apic_init() {
@@ -247,6 +258,12 @@ uint8_t karch_apic_init() {
 
     apic_supported = 0;
     ioapic_n = lapic_n = 0;
+
+    // --> set IRQ as identity mapping.
+    for (uint8_t i = 0; i < MAX_IOAPIC_IRQ; ++i) {
+        ioapic_irq_ovr[i] = i;
+        ioapic_irq_rvo[i] = i;
+    }
 
     if (!karch_apic_exists()) {
         return 0; // --> not supported.
@@ -268,9 +285,16 @@ uint8_t karch_apic_init() {
     
     // --> set the current LAPIC as BSP.
     karch_lapic_t* lapic = karch_lapic_get_current();
+
+    lapic_bsp = 0;
     if (lapic) {
         lapic->bsp = 1;
+        lapic_bsp = lapic->id;
     }
+
+    // --> we need to get replacement mapping for IRQ0 (PIT) and IRQ8.
+    //   : https://wiki.osdev.org/HPET#.22Legacy_replacement.22_mapping
+    
     return 1;
 }
 
@@ -298,21 +322,37 @@ void karch_apic_collect() {
     karch_acpi_madt_iterate(&iter, 0);
 
     while (karch_acpi_madt_next(&iter, &item)) {
-        if (item->type != ACPIMADT_IOAPIC) {
-            continue;
+        if (item->type == ACPIMADT_IOAPIC) {
+            karch_acpi_madt_ioapic_t* now = (karch_acpi_madt_ioapic_t*) item;
+            karch_ioapic_t* cur = &ioapic[ioapic_n++];
+
+            uint32_t version = karch_ioapic_read(now->addr, IOAPIC_VERSION);
+
+            cur->id = now->id;
+            cur->addr = now->addr;
+            cur->paddr = now->addr;
+            cur->gsi_base = now->intr;
+
+            cur->pins = ((version & 0xff0000) >> 16) + 1;
         }
         
-        karch_acpi_madt_ioapic_t* now = (karch_acpi_madt_ioapic_t*) item;
-        karch_ioapic_t* cur = &ioapic[ioapic_n++];
+        else if (item->type == ACPIMADT_INT_SRC) {
+            karch_acpi_madt_intsrc_t* now = (karch_acpi_madt_intsrc_t*) item;
 
-        uint32_t version = karch_ioapic_read(now->addr, IOAPIC_VERSION);
+            // --> take only EISA / ISA.
+            if (now->bus != 0) {
+                continue;
+            }
 
-        cur->id = now->id;
-        cur->addr = now->addr;
-        cur->paddr = now->addr;
-        cur->gsi_base = now->intr;
+            uint8_t pol = ACPI_INTSRC_GET_POLARITY(now->flags);
+            uint8_t trg = ACPI_INTSRC_GET_TRIGGER_MODE(now->flags);
 
-        cur->pins = ((version & 0xff0000) >> 16) + 1;
+            // --> store mapping info here.
+            ioapic_irq_ovr[now->global_intr] 
+                = MAKE_IRQ_OVR(now->source, pol, trg);
+
+            ioapic_irq_rvo[now->source] = now->global_intr;
+        }
     }
     
     // --
@@ -463,19 +503,27 @@ uint8_t karch_lapic_eoi() {
  * `n` value: refer `gv_apic_hw`.
 */
 void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
-    karch_apic_cb_t cb = apic_intr[n];
-    if (cb) {
-        karch_lapic_intr_t e;
 
-        e.n = n;
-        e.k = k;
-        e.frame = frame;
 
-        cb(0);
+    // ---
+    if (n <= MAX_IOAPIC_IRQ && ioapic_irq[n].apic) {
+        uint8_t ovr = GET_IRQ_OVR(ioapic_irq_ovr[n]);
+
+        karch_ioapic_disable_irq(n);
+        // --> translate to kernel's IRQn.
+        karch_irq_dispatch(ovr);
+        karch_ioapic_enable_irq(n);
+
+        // --> end of interrupt.
+        if (ioapic_irq[n].eoi) {
+            ioapic_irq[n].eoi(n);
+        }
     }
 
-    // --> emit EIO to Local APIC.
-    karch_lapic_eoi();
+    else {
+        karch_lapic_eoi();
+    }
+
     if (!k) {
         // --> switch to user if possible.
     }
@@ -623,42 +671,33 @@ void karch_lapic_calibrate_clocks(uint8_t n) {
     karch_lapic_write(LAPIC_LVTTR, lvtt);
 
     // -----------
-    karch_i8259_cb_t prev_tmr, prev_spu;
-    void* prev_tmr_data, *prev_spu_data;
+    karch_irq_t irq_timer, irq_spu;
 
-    // --> backup previous interrupt handling callback here.
-    karch_i8259_get_handler(I8259_TIMER, &prev_tmr, &prev_tmr_data);
-    karch_i8259_get_handler(I8259_LPT1, &prev_spu, &prev_spu_data);
-
-    // --> and set the tester interrupt handler callback.
-    karch_i8259_set_handler(I8259_TIMER, karch_lapic_i8259_handler, 0);
-    karch_i8259_set_handler(I8259_LPT1, karch_lapic_i8259_handler, 0);
-
-    // --> enable i8253 timer here.
-    karch_i8253_init(LAPIC_PROBE_HZ);
-    karch_i8259_unmask(I8259_TIMER);
-
+    irq_timer.handler = karch_lapic_irq_handler;
+    irq_spu.handler = karch_lapic_irq_handler;
+    
     // --> reset probe.
     lapic_probe = 0;
 
-    // --> enable interrupt.
-    cpu_sti();
+    // --> hook timer and spurious IRQs.
+    karch_irq_register(IRQN_TIMER, &irq_timer);
+    karch_irq_register(IRQN_LPT1, &irq_spu);  // --> spurious IRQ.
+
+    // --> enable i8253 timer here.
+    karch_i8253_init(LAPIC_PROBE_HZ);
 
     while (lapic_probe < LAPIC_PROBE_TICK) {
         cpu_sti();
+        cpu_mfence();
     }
 
-    // --> disable interrupt.
-    cpu_cli();
-
-    // --> restore previous interrupt handlers.
-    karch_i8259_set_handler(I8259_TIMER, prev_tmr, prev_tmr_data);
-    karch_i8259_set_handler(I8259_LPT1, prev_spu, prev_spu_data);
-
     // --> then, disable i8253 timer.
-    karch_i8259_mask(I8259_TIMER);
     karch_i8253_deinit();
 
+    // --> unhook IRQs.
+    karch_irq_unregister(&irq_timer);
+    karch_irq_unregister(&irq_spu);
+    
     uint32_t ccr_delta = lapic_probe_tccr_n - lapic_probe_tccr_e;
     uint64_t tsc_delta = lapic_probe_tsc_e - lapic_probe_tsc_n;
     
@@ -672,8 +711,8 @@ void karch_lapic_calibrate_clocks(uint8_t n) {
     lapic[n].ready = 1;
 }
 
-void karch_lapic_i8259_handler(const karch_i8259_t* t) {
-    if (t->n == I8259_TIMER) {
+void karch_lapic_irq_handler(karch_irq_t* t) {
+    if (t->n == IRQN_TIMER) {
         uint32_t tcrt;
         uint64_t tsc;
         
@@ -693,10 +732,12 @@ void karch_lapic_i8259_handler(const karch_i8259_t* t) {
             karch_i8253_deinit();
         }
     }
-    
-    else if (t->n == I8259_LPT1) {
+    /*
+    // --> ignore others.
+    else if (t->n == IRQN_LPT1) {
         // --> spurious: do nothing.
     }
+    */
 }
 
 uint8_t karch_lapic_oneshot_timer(uint32_t usec) {
@@ -706,9 +747,9 @@ uint8_t karch_lapic_oneshot_timer(uint32_t usec) {
     }
 
     uint32_t tpus = lapic->lapic_freq / 1000000;
-    karch_lapic_write(LAPIC_TIMER_ICR, usec * tpus);
     karch_lapic_write(LAPIC_TIMER_DCR, APIC_TDCR_1);
     karch_lapic_write(LAPIC_LVTTR, APIC_TIMER_INT_VECTOR);
+    karch_lapic_write(LAPIC_TIMER_ICR, usec * tpus);
     return 1;
 }
 
@@ -796,7 +837,7 @@ void karch_apic_load_idt() {
     karch_lapic_t* lapic = karch_lapic_get_current();
     
     // --> load hardware interrupt, + 0x50.
-    karch_tables_load_idt(gv_apic_hw, 0x50);
+    karch_tables_load_idt(gv_apic_hw, APIC_HW_IRQ_VECTOR_OFFSET);
 
     // --> load special interrupts, as-is.
     karch_tables_load_idt(gv_apic_zb, 0x00);
@@ -968,4 +1009,156 @@ uint8_t karch_lapic_emit_ipi(uint8_t vector, uint32_t n, karch_lapic_ipi_t how) 
     }
 
     return 1;
+}
+
+void karch_ioapic_enable_all() {
+    
+    // --> disable i8259 icmr.
+    //   : this will enable IOAPIC all.
+    karch_i8259_imcr_disable();
+}
+
+void karch_ioapic_write_redirector(
+    void* ioapic_addr, uint32_t entry, uint32_t high, uint32_t low)
+{
+	karch_ioapic_write((uint32_t)ioapic_addr, (uint8_t) (IOAPIC_REDIR_TABLE + entry * 2 + 1), high);
+	karch_ioapic_write((uint32_t)ioapic_addr, (uint8_t) (IOAPIC_REDIR_TABLE + entry * 2), low);
+}
+
+/**
+ * edge mode `EOI` method.
+ */
+void karch_ioapic_eoi_edge(uint8_t) {
+    karch_lapic_eoi();
+}
+
+void karch_ioapic_eoi_lv(uint8_t irq) {
+    karch_ioapic_irq_t* target_irq = &ioapic_irq[irq];
+    uint32_t tmr = karch_lapic_read(
+        LAPIC_TMR + 0x10 * ((target_irq->vector) >> 5));
+
+    // --> edge mode `EOI` first then,
+    karch_ioapic_eoi_edge(irq);
+    
+    const uint32_t flag = (1 << ((target_irq->vector) & 0x1f));
+
+    // --> delivered by edge trigger mode??
+    //   : in anyway, if it delivered as edge trigger mode, 
+    //   : it requires recovery workarounds for broken chipsets.
+
+    if ((tmr & flag) == 0) { 
+        karch_ioapic_t* ioapic = target_irq->apic;
+        // --> was not for level trigger mode.
+        //   : recover 
+
+        uint32_t reg = IOAPIC_REDIR_TABLE + target_irq->pin * 2;
+        uint32_t low = karch_ioapic_read(ioapic->addr, reg);
+        uint32_t maskbit = low & APIC_ICR_INT_MASK;
+
+        // --> set mask and edge trigger mode.
+        low |= APIC_ICR_INT_MASK;
+        low &= ~APIC_ICR_TRIGGER;
+
+        karch_ioapic_write(ioapic->addr, reg, low);
+    
+        // --> set back to level and restore the mask bit.
+        low |= APIC_ICR_TRIGGER;
+        low &= ~APIC_ICR_INT_MASK;
+        low |= maskbit;
+        
+        karch_ioapic_write(ioapic->addr, reg, low);
+    }
+}
+
+void karch_ioapic_set_irq(uint8_t irq) {
+    if (irq >= MAX_IOAPIC_IRQ) {
+        return;
+    }
+
+    // --> translate to IOAPIC irq number.
+    irq = ioapic_irq_rvo[irq];
+
+    // --> already set.
+    karch_ioapic_irq_t* target_irq = &ioapic_irq[irq];
+    if (target_irq->apic && target_irq->eoi) {
+        return;
+    }
+
+    for(uint8_t i = 0; i < ioapic_n; ++i) {
+        karch_ioapic_t* apic = &ioapic[i];
+
+        /* check IRQ range. */
+        if (apic->gsi_base <= irq &&
+            apic->gsi_base + apic->pins > irq) 
+        {
+            target_irq->apic = apic;
+            target_irq->pin = irq - apic->gsi_base;
+            target_irq->vector = APIC_HW_IRQ_VECTOR_OFFSET + irq;
+            
+            // --> set EOI method in here.
+            if (irq < 16) {
+                target_irq->eoi = karch_ioapic_eoi_edge;
+            }
+            else {
+                target_irq->eoi = karch_ioapic_eoi_lv;
+            }
+
+            // --> legacy (E)ISA are reserved as `edge trigger`.
+            uint32_t lo = 0, hi = ((uint32_t)lapic_bsp) << 24;
+            if (irq >= 16) {
+		        /* PCI active-low */
+                lo |= APIC_ICR_INT_POLARITY;
+
+                /* PCI level triggered */
+                lo |= APIC_ICR_TRIGGER;
+            }
+            else {
+                /* ISA active-high */
+                /* ISA edge triggered */
+            }
+
+            lo |= target_irq->vector;
+            karch_ioapic_write_redirector(
+                apic->addr, target_irq->pin, hi, lo
+            );
+
+            break;
+        }
+    }
+}
+
+void karch_ioapic_disable_irq(uint8_t irq) {
+    if (irq >= MAX_IOAPIC_IRQ) {
+        return;
+    }
+
+    // --> translate to IOAPIC irq number.
+    irq = ioapic_irq_rvo[irq];
+
+    // --> already set.
+    karch_ioapic_irq_t* target_irq = &ioapic_irq[irq];
+    if (!target_irq->apic) {
+        return;
+    }
+
+    karch_ioapic_disable_pin(target_irq->apic->addr, target_irq->pin);
+    target_irq->state |= 1;
+}
+
+void karch_ioapic_enable_irq(uint8_t irq) {
+    if (irq >= MAX_IOAPIC_IRQ) {
+        return;
+    }
+
+    // --> translate to IOAPIC irq number.
+    irq = ioapic_irq_rvo[irq];
+
+    // --> already set.
+    karch_ioapic_irq_t* target_irq = &ioapic_irq[irq];
+    if (!target_irq->apic) {
+        return;
+    }
+
+    karch_ioapic_enable_pin(target_irq->apic->addr, target_irq->pin);
+    target_irq->state &= ~1;
 }

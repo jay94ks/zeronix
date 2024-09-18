@@ -1,6 +1,7 @@
 #define __ARCH_X86_INTERNALS__ 1
 #include <x86/legacy/i8259.h>
 #include <x86/k86/tables.h>
+#include <x86/k86/irq.h>
 #include <x86/klib.h>
 
 #include <zeronix/kstring.h>
@@ -50,9 +51,9 @@ static const struct gatevec gv_i8259_slave[] = {
     GATEVEC_NULL
 };
 
+#define i8259_MAX_IRQ   16
+
 // --
-karch_i8259_cb_t i8259_cb[16];
-void* i8259_cb_data[16];
 uint8_t i8259_imcr;
 
 // --
@@ -79,15 +80,14 @@ uint8_t i8259_imcr;
 #define ICW4_PC_AEOI_SLAVE      0x0B    /* not SFNM, buffered, auto EOI, 8086 */
 #define ICW4_PC_AEOI_MASTER     0x0F    /* not SFNM, buffered, auto EOI, 8086 */
 #define i8259_CTLMASK(irq)      ((irq) < 8 ? i8259_INT_CTLMASK : i8259_INT2_CTLMASK)
+#define i8259_IRQ_VECTOR(x)     ((((x) < 8) ? GATEVEC_PIC_MASTER : GATEVEC_PIC_SLAVE) + (x))
+#define i8259_IRQ_HWVEC(x)      ((x) < GATEVEC_PIC_SLAVE)
 
 #define i8259_IMCR1             0x22
 #define i8259_IMCR2             0x23
 
 // --
 void karch_i8256_init() {
-    kmemset(i8259_cb, 0, sizeof(i8259_cb));
-    kmemset(i8259_cb_data, 0, sizeof(i8259_cb_data));
-
     i8259_imcr = 1; // --> enabled initially.
 
     // --> setup the IDT table.
@@ -118,7 +118,11 @@ void karch_i8259_setup_idt() {
     karch_tables_load_idt(gv_i8259_slave, GATEVEC_PIC_SLAVE);
 }
 
-void karch_i8259_unmask(karch_i8259_irq_t irq) {
+void karch_i8259_unmask(uint8_t irq) {
+    if (irq >= i8259_MAX_IRQ) {
+        return;
+    }
+
     const uint8_t ctlmask = i8259_CTLMASK(irq);
     const uint8_t last = cpu_in8(ctlmask);
 
@@ -128,7 +132,11 @@ void karch_i8259_unmask(karch_i8259_irq_t irq) {
     }
 }
 
-void karch_i8259_mask(karch_i8259_irq_t irq) {
+void karch_i8259_mask(uint8_t irq) {
+    if (irq >= i8259_MAX_IRQ) {
+        return;
+    }
+    
     const uint8_t ctlmask = i8259_CTLMASK(irq);
     const uint8_t last = cpu_in8(ctlmask);
     const uint8_t newval = last | (1 << (irq & 0x07));
@@ -145,7 +153,7 @@ void karch_i8259_disable() {
     cpu_in8(i8259_INT_CTLMASK);
 }
 
-void karch_i8259_eoi(karch_i8259_irq_t n) {
+void karch_i8259_eoi(uint8_t n) {
     if(n < 8) {
         cpu_out8(i8259_INT_CTL, i8259_END_OF_INT);
     }
@@ -155,12 +163,17 @@ void karch_i8259_eoi(karch_i8259_irq_t n) {
     }
 }
 
+uint8_t karch_i8259_check_imcr() {
+    return i8259_imcr;
+}
+
 void karch_i8259_imcr_disable() {
     karch_i8259_disable();
 
     // --> disconnect i8259.
-    if (0 && i8259_imcr != 0) {
+    if (i8259_imcr != 0) {
         i8259_imcr = 0;
+
         cpu_out8(i8259_IMCR1, 0x70);
         cpu_out8(i8259_IMCR2, 0x01);
     }
@@ -168,53 +181,23 @@ void karch_i8259_imcr_disable() {
 
 void karch_i8259_imcr_enable() {
     if (i8259_imcr == 0) {
+        i8259_imcr = 1;
+        
         cpu_out8(i8259_IMCR1, 0x70);
         cpu_out8(i8259_IMCR2, 0x00);
     }
 }
 
-uint8_t karch_i8259_get_handler(karch_i8259_irq_t n, karch_i8259_cb_t* cb, void** data) {
-    if (n > 15) {
-        return 0;
-    }
-
-    if (cb) {
-        *cb = i8259_cb[n];
-    }
-
-    if (data) {
-        *data = i8259_cb_data[n];
-    }
-
-    return 1;
-}
-
-uint8_t karch_i8259_set_handler(karch_i8259_irq_t n, karch_i8259_cb_t cb, void* data) {
-    if (n > 15) {
-        return 0;
-    }
-
-    i8259_cb_data[n] = data;
-    i8259_cb[n] = cb;
-    
-    cpu_mfence();
-    return 1;
-}
-
 void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
-    if (i8259_cb[n]) {
-        karch_i8259_t e;
+    karch_i8259_mask(n);
 
-        e.n = n;
-        e.k = k;
-        e.frame = frame;
-        e.data = i8259_cb_data[n];
-
-        i8259_cb[n](&e);
-    }
+    // --> dispatch i8259 irq.
+    karch_irq_dispatch(n);
+    karch_i8259_unmask(n);
 
     // --> emit EOI to PIC master and slave.
-    karch_i8259_eoi((karch_i8259_irq_t)n);
+    karch_i8259_eoi(n);
+
     if (!k) {
         // --> switch to user if possible.
     }

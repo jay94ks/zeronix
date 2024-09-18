@@ -14,7 +14,7 @@ extern "C" void kmain() {
 
     karch_interface(&arch);
 
-    arch.set_systick(onSysTick);
+    //arch.set_systick(onSysTick);
 }
 
 void onSysTick() {

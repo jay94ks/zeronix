@@ -139,9 +139,8 @@ int32_t karch_smp_init() {
         return -1;
     }
 
-    // --> disable i8259 icmr.
-    //   : this will enable IOAPIC all.
-    karch_i8259_imcr_disable();
+    // --> enable IO-APIC here.
+    karch_ioapic_enable_all();
     
     // --> load APIC's IDT and flush it..
     karch_apic_load_idt();
@@ -200,6 +199,41 @@ uint32_t karch_smp_prepare_ap_entry() {
     kmemcpy((void*) lowmem, &smp_ap_entry, size);
 
     return lowmem;
+}
+
+/**
+ * set a bit on ready-state bitmap.
+ */
+void karch_smp_set_ready(uint8_t cpu_id) {
+    karch_spinlock_lock(&smp_spinlock);
+    // --> set mask on bitmap.
+    uint32_t bit_i = SMP_BITMAP_INDEX(cpu_id);
+    smp_ready_bitmap[bit_i] |= SMP_BITMAP_MASK(cpu_id);
+    karch_spinlock_unlock(&smp_spinlock);
+}
+
+/**
+ * wait for APs to be ready.
+ */
+void karch_smp_wait_aps() {
+    uint8_t n = 0;
+    while (1) {
+        karch_lapic_mdelay(100); 
+        cpu_mfence();
+
+        n = 0;
+        karch_spinlock_lock(&smp_spinlock);
+        for (uint8_t i = 0; i < smp_ready_n; ++i) {
+            if ((smp_ready_bitmap[SMP_BITMAP_INDEX(i)] & SMP_BITMAP_MASK(i)) != 0) {
+                n++;
+            }
+        }
+
+        karch_spinlock_unlock(&smp_spinlock);
+        if (n == smp_ready_n) {
+            break;
+        }
+    }
 }
 
 /**
@@ -271,8 +305,12 @@ void karch_smp_start_ap() {
 
     // --> fill SMP informations for current running CPU.
     karch_smp_fill_info();
+    karch_smp_set_ready(smp_bsp_id);
 
-    // --> enter to the `kmain` for BSP.
+    // --> wait for APs to be ready.
+    karch_smp_wait_aps();
+
+    // --> finally, enter to the `kmain` for BSP.
     karch_k86_enter_kmain();
     while(1);
 }
@@ -287,8 +325,8 @@ void karch_smp_fill_info() {
     karch_env_cpuinfo(&smp_cpu_ident[now_id]);
 
     // --> set mask on bitmap.
-    uint32_t bit_i = SMP_BITMAP_INDEX(now_id);
-    smp_ready_bitmap[bit_i] |= SMP_BITMAP_MASK(now_id);
+    // uint32_t bit_i = SMP_BITMAP_INDEX(now_id);
+    // smp_ready_bitmap[bit_i] |= SMP_BITMAP_MASK(now_id);
 }
 
 int32_t karch_smp_cpuid() {
@@ -436,6 +474,7 @@ void karch_smp_boot_ap32() {
  */
 void karch_smp_init_ap32() {
     uint32_t now_id = smp_ap_id;
+    void(* jump_to)(); 
 
     // --> identify current running AP.
     karch_smp_fill_info();
@@ -446,9 +485,12 @@ void karch_smp_init_ap32() {
     
     // --> setup CPU local variables for current CPU.
     karch_cpulocals_init();
-    void(* jump_to)(); 
+    karch_lapic_enable(now_id);
     
-    // --> wait for SMP jump-to signal.
+    // --> set the ready bit.
+    karch_smp_set_ready(now_id);
+    
+    // --> then, wait for SMP jump-to signal.
     karch_stackmark_t* sm = karch_taskseg_get_stackmark(now_id);
     while(1) {
         if (!karch_spinlock_trylock(&smp_spinlock)) {

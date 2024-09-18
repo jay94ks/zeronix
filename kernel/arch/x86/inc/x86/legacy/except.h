@@ -17,7 +17,7 @@ typedef enum {
     EXCEPT_OVERFLOW     = 4,
     EXCEPT_BOUNDS       = 5,
     EXCEPT_INVAL_OPCODE = 6,
-    EXCEPT_COPR_NAV     = 7,    // --> co-processor not available.
+    EXCEPT_COPR_NAVL    = 7,    // --> co-processor not available.
     EXCEPT_DOUBLE_FAULT = 8,
     EXCEPT_COPR_SEGOVER = 9,
     EXCEPT_INVAL_TSS    = 10,

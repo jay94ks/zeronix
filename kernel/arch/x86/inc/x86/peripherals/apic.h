@@ -27,7 +27,7 @@ typedef struct karch_x86_ioapic karch_ioapic_t;
 
 // --> forward decl.
 struct karch_x86_ioapic_irq;
-typedef void(* karch_ioapic_eio_t)(struct karch_x86_ioapic_irq*);
+typedef void(* karch_ioapic_eoi_t)(uint8_t irq);
 
 /**
  * karch_x86_ioapic_irq.
@@ -36,8 +36,8 @@ struct karch_x86_ioapic_irq {
     karch_ioapic_t*     apic;
     uint32_t            pin;
     uint32_t            vector;
-    karch_ioapic_eio_t  eoi;
-    uint32_t            state;
+    karch_ioapic_eoi_t  eoi;
+    uint32_t            state;  // --> 1: masked.
 } __packed;
 
 /**
@@ -287,6 +287,26 @@ uint8_t karch_lapic_pending_ipi();
  * returns non-zero value if succeed.
  */
 uint8_t karch_lapic_emit_ipi(uint8_t vector, uint32_t n, karch_lapic_ipi_t how);
+
+/**
+ * enable IO-APIC all.
+ */
+void karch_ioapic_enable_all();
+
+/**
+ * set an IRQ redirector on IO-APIC.
+ */
+void karch_ioapic_set_irq(uint8_t irq);
+
+/**
+ * disable an IRQ on IO-APIC.
+ */
+void karch_ioapic_disable_irq(uint8_t irq);
+
+/**
+ * enable an IRQ on IO-APIC.
+ */
+void karch_ioapic_enable_irq(uint8_t irq);
 
 // --
 #ifndef __NO_EXTERN_LAPIC_VARS__
