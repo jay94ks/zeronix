@@ -7,7 +7,7 @@
 
 #define __aligned(n)    __attribute__((aligned(n)))
 #define __packed        __attribute__((packed))
-
+#define __weak          __attribute__((weak))
 
 /**
  * standard integer types.

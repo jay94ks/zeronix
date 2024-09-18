@@ -10,6 +10,8 @@
 
 // --
 karch_irq_t* irq_registry[MAX_IRQ];
+karch_irq_ovr_t* irq_ovrs[MAX_IRQ];
+karch_irq_ovr_t irq_default;
 uint32_t irq_reg_val;
 
 /**
@@ -19,6 +21,9 @@ uint32_t irq_reg_val;
 // -- 
 void karch_irq_init() {
     kmemset(irq_registry, 0, sizeof(irq_registry));
+    kmemset(irq_ovrs, 0, sizeof(irq_ovrs));
+    irq_default.mask = karch_irq_mask_phys;
+    irq_default.unmask = karch_irq_unmask_phys;
 }
 
 uint8_t karch_irq_count() {
@@ -43,7 +48,57 @@ void karch_irq_dispatch(uint8_t n) {
     }
 }
 
+karch_irq_ovr_t* karch_irq_get_override(uint8_t n) {
+    if (n >= MAX_IRQ) {
+        return 0;
+    }
+
+    if (!irq_ovrs[n]) {
+        return &irq_default;
+    }
+
+    return irq_ovrs[n];
+}
+
+void karch_irq_set_override(uint8_t n, karch_irq_ovr_t* ovr) {
+    if (n >= MAX_IRQ) {
+        return 0;
+    }
+
+    if (!ovr) {
+        ovr = &irq_default;
+    }
+
+    irq_ovrs[n] = ovr;
+}
+
 void karch_irq_mask(uint8_t n) {
+    karch_irq_ovr_t* ovr = irq_ovrs[n];
+
+    if (ovr && ovr->mask) {
+        ovr->mask(n);
+        return;
+    }
+
+    karch_irq_mask_phys(n);
+}
+
+void karch_irq_unmask(uint8_t n) {
+    karch_irq_ovr_t* ovr = irq_ovrs[n];
+
+    if (ovr && ovr->unmask) {
+        ovr->unmask(n);
+        return;
+    }
+
+    karch_irq_unmask_phys(n);
+}
+
+void karch_irq_mask_phys(uint8_t n) {
+    if (n >= MAX_PHYS_IRQ) {
+        return;
+    }
+
     if (karch_i8259_check_imcr()) {
         karch_i8259_mask(n);
         return;
@@ -52,7 +107,11 @@ void karch_irq_mask(uint8_t n) {
     karch_ioapic_disable_irq(n);
 }
 
-void karch_irq_unmask(uint8_t n) {
+void karch_irq_unmask_phys(uint8_t n) {
+    if (n >= MAX_PHYS_IRQ) {
+        return;
+    }
+
     if (karch_i8259_check_imcr()) {
         karch_i8259_unmask(n);
         return;

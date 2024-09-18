@@ -226,9 +226,6 @@ uint64_t lapic_probe_tsc_n;         // --> current TSC value.
 uint64_t lapic_probe_tsc_e;         // --> TSC value when the probe reached to end.
 karch_spinlock_t lapic_lock;        // --> lock to ensure concurrency.
 
-// --
-karch_apic_cb_t apic_intr[256];
-
 // -- 
 uint8_t karch_apic_supported() {
     if (!karch_acpi_supported()) {
@@ -252,8 +249,6 @@ uint8_t karch_apic_init() {
 
     kmemset(lapic, 0, sizeof(lapic));
     kmemset(&lapic_info, 0, sizeof(lapic_info));
-    
-    kmemset(apic_intr, 0, sizeof(apic_intr));
     karch_spinlock_init(&lapic_lock);
 
     apic_supported = 0;
@@ -456,36 +451,6 @@ uint32_t karch_lapic_error() {
     return karch_lapic_read(LAPIC_ESR);
 }
 
-/**
- * get the apic interrupt handler for specified irq.
- * returns non-zero if success.
- */
-uint8_t karch_apic_get_handler(uint32_t n, karch_apic_cb_t* cb) {
-    if (!karch_apic_supported()) {
-        return 0;
-    }
-
-    if (cb) {
-        *cb = apic_intr[n];
-    }
-
-    return 1;
-}
-
-/**
- * set the apic interrupt handler for specified irq.
- * returns non-zero if success.
- */
-uint8_t karch_apic_set_handler(uint32_t n, karch_apic_cb_t cb) {
-    if (!karch_apic_supported()) {
-        return 0;
-    }
-
-    apic_intr[n] = cb;
-    cpu_mfence();
-    return 1;
-}
-
 uint8_t karch_lapic_eoi() {
     if (lapic_info.eoi_addr == 0) {
         return 0;
@@ -503,9 +468,6 @@ uint8_t karch_lapic_eoi() {
  * `n` value: refer `gv_apic_hw`.
 */
 void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
-
-
-    // ---
     if (n <= MAX_IOAPIC_IRQ && ioapic_irq[n].apic) {
         uint8_t ovr = GET_IRQ_OVR(ioapic_irq_ovr[n]);
 
@@ -534,15 +496,10 @@ void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
  * `n` value: refer `gv_apic_zb`.
 */
 void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
-    karch_apic_cb_t cb = apic_intr[n];
-    if (cb) {
-        karch_lapic_intr_t e;
-
-        e.n = n;
-        e.k = k;
-        e.frame = frame;
-
-        cb(0);
+    if (n >= 0xf0 && n <= 0xff) {
+        karch_irq_mask(n);
+        karch_irq_dispatch(n);
+        karch_irq_unmask(n);
     }
 
     // --> emit EIO to Local APIC.

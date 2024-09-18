@@ -11,80 +11,59 @@
 #include <x86/klib.h>
 
 // --
-#define SYSTICK_I8253_REQUIRED_HZ       100000           /* 0.000 01 sec: 100 us. */
-#define SYSTICK_APIC_REQUIRED_HZ        100000           /* 0.000 01 sec: 100 us. */
+#define SYSTICK_I8253_REQUIRED_HZ       10000
+#define SYSTICK_APIC_REQUIRED_HZ        10000
 #define SYSTICK_APIC_REQUIRED_FREQ      (SYSTICK_APIC_REQUIRED_HZ / 10)
 
 // --
-void karch_systick_apic_handler(const karch_lapic_intr_t* intr);
-void karch_systick_irq_handler(karch_irq_t* irq);
-
-// --
-karch_systick_t systick;
+karch_irq_ovr_t systick_ovr;
 karch_irq_t systick_irq;
 uint32_t systick_freq;
+uint8_t systick_mode;                   // 0: i8253, 1: apic.
+
+// --
+void karch_systick_mask(uint8_t n);
+void karch_systick_unmask(uint8_t n);
+
+/* redirect i8259 timer interrupt to SYSTICK. */
+void karch_systick_irq_handler(karch_irqn_t* irq) {
+    karch_irq_dispatch(IRQN_SYSTICK);
+}
 
 // --
 void karch_systick_init() {
-    systick = 0;
-    systick_freq = 0;
-
-    return;
-
     karch_lapic_t* lapic = karch_lapic_get_current();
-    if (!lapic) {
-        systick_freq = SYSTICK_I8253_REQUIRED_HZ;
-        systick_irq.handler = karch_systick_irq_handler;
 
-        // --> initialize i8253 timer.
-        karch_i8253_init(SYSTICK_I8253_REQUIRED_HZ);
-        
-        // --> register legacy timer interrupt.
-        karch_irq_register(IRQN_TIMER, &systick_irq);
+    systick_ovr.mask = karch_systick_mask;
+    systick_ovr.unmask = karch_systick_unmask;
+    karch_irq_set_override(IRQN_SYSTICK, &systick_ovr);
+
+    systick_mode = lapic ? 1 : 0;
+    systick_freq = lapic 
+        ? SYSTICK_APIC_REQUIRED_HZ 
+        : SYSTICK_I8253_REQUIRED_HZ;
+
+    if (!systick_mode) {
+        systick_irq.handler = karch_systick_irq_handler;
+    }
+}
+
+void karch_systick_mask(uint8_t n) {
+    if (systick_mode) {
+        karch_lapic_stop_timer();
         return;
     }
 
-    systick_freq = SYSTICK_APIC_REQUIRED_HZ;
-
-    // --> use APIC timer: setup periodic timer here.
-    karch_apic_set_handler(LAPICIRQ_TIMER, karch_systick_apic_handler);
-    karch_lapic_periodic_timer(SYSTICK_APIC_REQUIRED_FREQ); // --> 1 usec.
-
-    cpu_sti();
+    karch_i8253_deinit();
+    karch_irq_unregister(&systick_irq);
 }
 
-/**
- * set the `systick` handler.
- */
-void karch_systick_set_handler(karch_systick_t handler) {
-    systick = handler;
-    cpu_mfence();
-}
-
-/**
- * pass the timer interrupt to SYSTICK handler.
- */
-void karch_systick_irq_handler(karch_irq_t* irq) {
-    karch_systick_t exec = systick;
-
-    // --> i8259 is always under BSP CPU.
-    if (exec) {
-        exec();
-    }
-}
-
-/**
- * pass the timer interrupt to SYSTICK handler.
- */
-void karch_systick_apic_handler(const karch_lapic_intr_t* intr) {
-    uint8_t is_bsp = karch_smp_bspid() == karch_smp_cpuid() ? 1 : 0;
-    karch_systick_t exec = systick;
-
-    karch_lapic_stop_timer();
-
-    if (exec) {
-        exec();
+void karch_systick_unmask(uint8_t n) {
+    if (systick_mode) {
+        karch_lapic_periodic_timer(SYSTICK_APIC_REQUIRED_FREQ); // --> 1 usec.
+        return;
     }
 
-    karch_lapic_periodic_timer(SYSTICK_APIC_REQUIRED_FREQ);
+    karch_irq_register(IRQN_TIMER, &systick_irq);
+    karch_i8253_init(SYSTICK_I8253_REQUIRED_HZ);
 }

@@ -81,21 +81,6 @@ typedef enum {
 } karch_lapic_irq_t;
 
 /**
- * karch_lapic_intr_t.
- * this is a data structure for notifying interrupts.
- */
-typedef struct {
-    uint32_t n;
-    uint32_t k;
-    karch_intr_frame_t* frame;
-} karch_lapic_intr_t;
-
-/**
- * A callback type to pass interrupt execution to other.
- */
-typedef void (*karch_apic_cb_t)(const karch_lapic_intr_t* i8259);
-
-/**
  * karch_lapic_ipi_t
  */
 typedef enum {
@@ -177,18 +162,6 @@ void karch_lapic_write(uint32_t iobase, uint32_t val);
  * get the lapic error number.
  */
 uint32_t karch_lapic_error();
-
-/**
- * get the apic interrupt handler for specified irq.
- * returns non-zero if success.
- */
-uint8_t karch_apic_get_handler(uint32_t n, karch_apic_cb_t* cb);
-
-/**
- * set the apic interrupt handler for specified irq.
- * returns non-zero if success.
- */
-uint8_t karch_apic_set_handler(uint32_t n, karch_apic_cb_t cb);
 
 /**
  * signal the end of interrupt handler to apic.

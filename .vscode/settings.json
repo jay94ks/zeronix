@@ -30,6 +30,10 @@
         "apic.h": "c",
         "cpulocal.h": "c",
         "smp.h": "c",
-        "mmap.h": "c"
+        "mmap.h": "c",
+        "interface.h": "c",
+        "systick.h": "c",
+        "irq.h": "c",
+        "irqn.h": "c"
     }
 }

@@ -1,10 +1,13 @@
 #include <zeronix/types.h>
 #include <zeronix/arch/arch.h>
+#include <zeronix/arch/irq.h>
 
 karch_t arch;
 uint32_t n;
 
-void onSysTick();
+karch_irq_t systick;
+
+void onSysTick(karch_irq_t* irq);
 
 extern "C" void kmain() {
     uint16_t* vga = (uint16_t*) 0xb8000;
@@ -14,10 +17,11 @@ extern "C" void kmain() {
 
     karch_interface(&arch);
 
-    //arch.set_systick(onSysTick);
+    systick.handler = onSysTick;
+    karch_irq_register(IRQN_SYSTICK, &systick);
 }
 
-void onSysTick() {
+void onSysTick(karch_irq_t* irq) {
     uint16_t* vga = (uint16_t*) 0xb8000;
 
     char ch = 'a' + (n++ % ('z' - 'a'));

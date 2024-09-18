@@ -14,10 +14,8 @@ void karch_interface(karch_t* arch) {
 
     arch->mem_free = &mmap_free;
     arch->mem_kern_virt = &mmap_kern_virt;
+    arch->systick_freq = systick_freq;
 
     karch_interface_smp(&arch->smp);
-    
-    arch->systick_freq = systick_freq;
-    arch->set_systick = karch_systick_set_handler;
     
 }

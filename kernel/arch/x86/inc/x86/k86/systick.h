@@ -17,11 +17,6 @@ extern uint32_t systick_freq;
  */
 void karch_systick_init();
 
-/**
- * set the `systick` handler.
-*/
-void karch_systick_set_handler(karch_systick_t systick);
-
 #endif
 
 #ifdef __cplusplus
