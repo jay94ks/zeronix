@@ -66,6 +66,46 @@ typedef struct {
 } karch_lapic_t;
 
 /**
+ * karch_lapic_irq_t.
+ */
+typedef enum {
+
+    /* special interrupts. */
+    LAPICIRQ_SCHEDULE   = 0xf1,
+    LAPICIRQ_CPU_HALT   = 0xf2,
+    LAPICIRQ_SPURIOUS   = 0xff,
+    LAPICIRQ_ERROR      = 0xfe,
+
+    /* BSP interrupts: same with SCHEDULE. */
+    LAPICIRQ_TIMER      = 0xf0
+} karch_lapic_irq_t;
+
+/**
+ * karch_lapic_intr_t.
+ * this is a data structure for notifying interrupts.
+ */
+typedef struct {
+    uint32_t n;
+    uint32_t k;
+    karch_intr_frame_t* frame;
+} karch_lapic_intr_t;
+
+/**
+ * A callback type to pass interrupt execution to other.
+ */
+typedef void (*karch_apic_cb_t)(const karch_lapic_intr_t* i8259);
+
+/**
+ * karch_lapic_ipi_t
+ */
+typedef enum {
+    LAPICIPI_SPECIFIC = 0,
+    LAPICIPI_SELF = 1,
+    LAPICIPI_BROADCAST = 2,
+    LAPICIPI_EXCEPT_SELF = 3
+} karch_lapic_ipi_t;
+
+/**
  * returns whether the APIC is supported or not.
  */
 uint8_t karch_apic_supported();
@@ -137,6 +177,18 @@ void karch_lapic_write(uint32_t iobase, uint32_t val);
  * get the lapic error number.
  */
 uint32_t karch_lapic_error();
+
+/**
+ * get the apic interrupt handler for specified irq.
+ * returns non-zero if success.
+ */
+uint8_t karch_apic_get_handler(uint32_t n, karch_apic_cb_t* cb);
+
+/**
+ * set the apic interrupt handler for specified irq.
+ * returns non-zero if success.
+ */
+uint8_t karch_apic_set_handler(uint32_t n, karch_apic_cb_t cb);
 
 /**
  * signal the end of interrupt handler to apic.
@@ -223,6 +275,18 @@ uint8_t karch_lapic_send_init_ipi(uint8_t n);
  */
 uint8_t karch_lapic_send_startup_ipi(uint8_t n, uint32_t entry_point);
 #endif
+
+/**
+ * test whether the APIC is pending to deliver ipi or not.
+ * returns non-zero value if pending.
+ */
+uint8_t karch_lapic_pending_ipi();
+
+/**
+ * emit an IPI to specified LAPIC.
+ * returns non-zero value if succeed.
+ */
+uint8_t karch_lapic_emit_ipi(uint8_t vector, uint32_t n, karch_lapic_ipi_t how);
 
 // --
 #ifndef __NO_EXTERN_LAPIC_VARS__

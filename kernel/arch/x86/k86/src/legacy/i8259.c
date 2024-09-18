@@ -87,6 +87,7 @@ uint8_t i8259_imcr;
 void karch_i8256_init() {
     kmemset(i8259_cb, 0, sizeof(i8259_cb));
     kmemset(i8259_cb_data, 0, sizeof(i8259_cb_data));
+
     i8259_imcr = 1; // --> enabled initially.
 
     // --> setup the IDT table.
@@ -193,8 +194,10 @@ uint8_t karch_i8259_set_handler(karch_i8259_irq_t n, karch_i8259_cb_t cb, void* 
         return 0;
     }
 
-    i8259_cb[n] = cb;
     i8259_cb_data[n] = data;
+    i8259_cb[n] = cb;
+    
+    cpu_mfence();
     return 1;
 }
 
@@ -212,7 +215,6 @@ void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
 
     // --> emit EOI to PIC master and slave.
     karch_i8259_eoi((karch_i8259_irq_t)n);
-
     if (!k) {
         // --> switch to user if possible.
     }

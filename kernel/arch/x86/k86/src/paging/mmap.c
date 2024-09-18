@@ -1,4 +1,6 @@
 #define __ARCH_X86_INTERNALS__ 1
+#define __NO_MMAP_EXTERNS__ 1
+
 #include <x86/k86/mmap.h>
 #include <x86/k86/paging.h>
 #include <x86/boot/bootenv.h>

@@ -372,7 +372,7 @@ karch_apic_zbint_f2:
     KARCH_APIC_INTR 0xf2
 
 karch_apic_zbint_ff:
-    KARCH_APIC_INTR 0xf3
+    KARCH_APIC_INTR 0xff
     
 karch_apic_zbint_fe:
-    KARCH_APIC_INTR 0xf4
+    KARCH_APIC_INTR 0xfe

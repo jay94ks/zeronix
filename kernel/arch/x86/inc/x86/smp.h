@@ -28,18 +28,13 @@ uint8_t karch_smp_bspid();
 #ifdef __ARCH_X86_INTERNALS__
 
 /**
- * callback type to enter `kmain`. 
- */
-typedef void(* karch_enter_kmain_t)();
-
-/**
  * initalize the minimal SMP module.
  * this returns:
  * 1) ret < 0: not supported.
  * 2) ret = 0: failed, fatal error.
  * 3) otherwise, this will not return to caller.  
  */
-int32_t karch_smp_init(karch_enter_kmain_t kmain);
+int32_t karch_smp_init();
 #endif
 
 /**

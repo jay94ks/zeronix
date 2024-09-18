@@ -181,16 +181,15 @@ static const struct gatevec gv_apic_hw[] = {
 };
 
 static const struct gatevec gv_apic_zb[] = {
-    { karch_apic_zbint_f1, 0xf1, PRIV_KERN }, // --> sched proc.  (SMP only)
-    { karch_apic_zbint_f2, 0xf2, PRIV_KERN }, // --> CPU halt.    (SMP only)
-    { karch_apic_zbint_fe, 0xff, PRIV_KERN }, // --> spurious int vec.
-    { karch_apic_zbint_ff, 0xfe, PRIV_KERN }, // --> error int vec.
+    { karch_apic_zbint_f1, LAPICIRQ_SCHEDULE, PRIV_KERN }, // --> sched proc.  (SMP only)
+    { karch_apic_zbint_f2, LAPICIRQ_CPU_HALT, PRIV_KERN }, // --> CPU halt.    (SMP only)
+    { karch_apic_zbint_fe, LAPICIRQ_SPURIOUS, PRIV_KERN }, // --> spurious int vec.
+    { karch_apic_zbint_ff, LAPICIRQ_ERROR, PRIV_KERN }, // --> error int vec.
     GATEVEC_NULL
 };
 
-// --> BSP ONLY.
 static const struct gatevec gv_apic_bsp[] = {
-    { karch_apic_zbint_f1, 0xf1, PRIV_KERN }, // --> timer.  (SMP only)
+    { karch_apic_zbint_f0, LAPICIRQ_TIMER, PRIV_KERN }, // --> timer.  (SMP only)
     GATEVEC_NULL
 };
 
@@ -216,6 +215,9 @@ uint64_t lapic_probe_tsc_n;         // --> current TSC value.
 uint64_t lapic_probe_tsc_e;         // --> TSC value when the probe reached to end.
 karch_spinlock_t lapic_lock;        // --> lock to ensure concurrency.
 
+// --
+karch_apic_cb_t apic_intr[256];
+
 // -- 
 uint8_t karch_apic_supported() {
     if (!karch_acpi_supported()) {
@@ -239,6 +241,8 @@ uint8_t karch_apic_init() {
 
     kmemset(lapic, 0, sizeof(lapic));
     kmemset(&lapic_info, 0, sizeof(lapic_info));
+    
+    kmemset(apic_intr, 0, sizeof(apic_intr));
     karch_spinlock_init(&lapic_lock);
 
     apic_supported = 0;
@@ -269,6 +273,7 @@ uint8_t karch_apic_init() {
     }
     return 1;
 }
+
 
 /**
  * test whether the CPU has APIC or not.
@@ -411,6 +416,36 @@ uint32_t karch_lapic_error() {
     return karch_lapic_read(LAPIC_ESR);
 }
 
+/**
+ * get the apic interrupt handler for specified irq.
+ * returns non-zero if success.
+ */
+uint8_t karch_apic_get_handler(uint32_t n, karch_apic_cb_t* cb) {
+    if (!karch_apic_supported()) {
+        return 0;
+    }
+
+    if (cb) {
+        *cb = apic_intr[n];
+    }
+
+    return 1;
+}
+
+/**
+ * set the apic interrupt handler for specified irq.
+ * returns non-zero if success.
+ */
+uint8_t karch_apic_set_handler(uint32_t n, karch_apic_cb_t cb) {
+    if (!karch_apic_supported()) {
+        return 0;
+    }
+
+    apic_intr[n] = cb;
+    cpu_mfence();
+    return 1;
+}
+
 uint8_t karch_lapic_eoi() {
     if (lapic_info.eoi_addr == 0) {
         return 0;
@@ -421,6 +456,52 @@ uint8_t karch_lapic_eoi() {
     }
     while(0);
     return 1;
+}
+
+/**
+ * Called from apic_idt.asm.
+ * `n` value: refer `gv_apic_hw`.
+*/
+void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+    karch_apic_cb_t cb = apic_intr[n];
+    if (cb) {
+        karch_lapic_intr_t e;
+
+        e.n = n;
+        e.k = k;
+        e.frame = frame;
+
+        cb(0);
+    }
+
+    // --> emit EIO to Local APIC.
+    karch_lapic_eoi();
+    if (!k) {
+        // --> switch to user if possible.
+    }
+}
+
+/**
+ * Called from apic_idt.asm.
+ * `n` value: refer `gv_apic_zb`.
+*/
+void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+    karch_apic_cb_t cb = apic_intr[n];
+    if (cb) {
+        karch_lapic_intr_t e;
+
+        e.n = n;
+        e.k = k;
+        e.frame = frame;
+
+        cb(0);
+    }
+
+    // --> emit EIO to Local APIC.
+    karch_lapic_eoi();
+    if (!k) {
+        // --> switch to user if possible.
+    }
 }
 
 void karch_lapic_enable_msr() {
@@ -747,31 +828,6 @@ void karch_apic_reset_idt() {
     karch_i8259_imcr_enable();
 }
 
-/**
- * Called from apic_idt.asm.
- * `n` value: refer `gv_apic_hw`.
-*/
-void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
-
-}
-
-/**
- * Called from apic_idt.asm.
- * `n` value: refer `gv_apic_zb`.
-*/
-void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
-    switch (n) {
-        case 0xf0: // --> timer. (only issued in BSP)
-            break;
-
-        case 0xf1: // 
-        case 0xf2:
-        case 0xfe:
-        case 0xff:
-            break;
-    }
-}
-
 void karch_lapic_set_ipi(uint32_t apic_id, uint32_t mode) {
     // --> write ICR2: set the target PE.
     uint32_t icr2 = karch_lapic_read(LAPIC_ICR2);
@@ -857,4 +913,59 @@ uint8_t karch_lapic_send_startup_ipi(uint8_t n, uint32_t entry_point) {
     }
 
 	return 1;
+}
+
+uint8_t karch_lapic_pending_ipi() {
+    if (!apic_supported) {
+        return 0;
+    }
+
+    return (karch_lapic_read(LAPIC_ICR1) & APIC_ICR_DELIVERY_PENDING) != 0 ? 1 : 0;
+}
+
+uint8_t karch_lapic_emit_ipi(uint8_t vector, uint32_t n, karch_lapic_ipi_t how) {
+    if (lapic_n <= 1) {
+        return 0;
+    }
+
+    while(1) {
+        if (karch_lapic_pending_ipi()) {
+            cpu_pause();
+            continue;
+        }
+
+        break;
+    }
+
+    karch_lapic_t* lapic = karch_lapic_get(n);
+    uint32_t icr1 = karch_lapic_read(LAPIC_ICR1) & 0xfff0f800;
+    uint32_t icr2 = karch_lapic_read(LAPIC_ICR2) & 0xffffff;
+
+    switch (how) {
+        case LAPICIPI_SPECIFIC:
+            if (!lapic->ready) {
+                return 0;
+            }
+
+            karch_lapic_write(LAPIC_ICR2, icr2 | (((uint32_t)lapic->id) << 24));
+            karch_lapic_write(LAPIC_ICR1, icr1 | APIC_ICR_DEST_FIELD | vector);
+            break;
+            
+        case LAPICIPI_SELF:
+            karch_lapic_write(LAPIC_ICR2, icr2);
+            karch_lapic_write(LAPIC_ICR1, icr1 | APIC_ICR_DEST_SELF | vector);
+            break;
+            
+        case LAPICIPI_BROADCAST:
+            karch_lapic_write(LAPIC_ICR2, icr2);
+            karch_lapic_write(LAPIC_ICR1, icr1 | APIC_ICR_DEST_ALL_BUT_SELF | vector);
+            break;
+            
+        case LAPICIPI_EXCEPT_SELF:
+            karch_lapic_write(LAPIC_ICR2, icr2);
+            karch_lapic_write(LAPIC_ICR1, icr1 | APIC_ICR_DEST_ALL | vector);
+            break;
+    }
+
+    return 1;
 }

@@ -16,10 +16,14 @@
 #include <x86/peripherals/apic.h>
 
 #include <x86/spinlock.h>
+#include <x86/k86/systick.h>
 #include <zeronix/kstring.h>
 
 // --
 void karch_k86_load_segs();
+
+// --> defined at head.asm.
+extern void jump_to_kmain();
 
 // --
 void karch_k86_init(bootinfo_t* info) {
@@ -68,4 +72,20 @@ void karch_k86_load_segs() {
     load_fs(SEG_SEL(GDT_KERN_DS));
     load_gs(SEG_SEL(GDT_KERN_DS));
     load_ss(SEG_SEL(GDT_KERN_DS));
+}
+
+/**
+ * enter to `kmain`, this called in BSP CPU.
+ */
+void karch_k86_enter_kmain() {
+    uint8_t now_id = karch_lapic_number();
+    karch_stackmark_t* sm 
+        = karch_taskseg_get_stackmark(now_id);
+
+    // --
+    karch_cpulocals_init();
+    karch_systick_init();
+
+    // --
+    switch_stack(sm, jump_to_kmain);
 }

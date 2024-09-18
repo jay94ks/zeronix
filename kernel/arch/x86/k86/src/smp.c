@@ -63,8 +63,6 @@ uint8_t smp_ready_bitmap[SMP_READY_BITMAP_BYTES];
 uint8_t smp_jump_bitmap[SMP_READY_BITMAP_BYTES];
 uint8_t smp_bsp_id;
 
-karch_enter_kmain_t smp_kmain;
-
 // --
 karch_spinlock_t smp_spinlock;
 void(* smp_jump_to)();
@@ -92,14 +90,13 @@ uint8_t karch_smp_bspid() {
 }
 
 // --
-int32_t karch_smp_init(karch_enter_kmain_t kmain) {
+int32_t karch_smp_init() {
     kmemset(smp_cpu_lock, 0, sizeof(smp_cpu_lock));
     kmemset(smp_cpu_ident, 0, sizeof(smp_cpu_ident));
     kmemset(smp_jump_bitmap, 0, sizeof(smp_jump_bitmap));
     karch_spinlock_init(&smp_spinlock);
 
     smp_avail = 0;
-    smp_kmain = kmain;
     smp_ready_n = 0;
     smp_jump_to = 0;
     smp_jump_id = -1;
@@ -133,7 +130,7 @@ int32_t karch_smp_init(karch_enter_kmain_t kmain) {
 
     // --> get the lapic number of BSP CPU.
     int32_t lapic_no = karch_lapic_number();
-    if (lapic_no < 0 || !karch_lapic_enable(0)) {
+    if (lapic_no < 0 || !karch_lapic_enable(lapic_no)) {
         smp_avail = 0;
 
         // --> reset interrupt tables to default k86 state.
@@ -275,13 +272,8 @@ void karch_smp_start_ap() {
     // --> fill SMP informations for current running CPU.
     karch_smp_fill_info();
 
-    // --> setup CPU local variables for current CPU.
-    karch_cpulocals_init();
-
-    if (smp_kmain) {
-        smp_kmain();
-    }
-
+    // --> enter to the `kmain` for BSP.
+    karch_k86_enter_kmain();
     while(1);
 }
 

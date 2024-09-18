@@ -3,8 +3,17 @@
 
 #include <zeronix/arch/smp.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * make an interface to access SMP feature.
  */
 uint8_t karch_interface_smp(karch_smp_t* smp);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

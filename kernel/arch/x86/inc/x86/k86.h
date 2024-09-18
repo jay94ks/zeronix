@@ -16,6 +16,11 @@ extern "C" {
  * this is for initializing the early x86 environment.
  */
 void karch_k86_init(bootinfo_t* info);
+
+/**
+ * enter to `kmain`. this must be called for BSP CPU.
+ */
+void karch_k86_enter_kmain();
 #endif
 
 #ifdef __cplusplus
