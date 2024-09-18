@@ -34,8 +34,6 @@ typedef struct {
  */
 typedef struct {
     uint32_t mem_high_phys;
-    uint32_t* pagedir;
-    uint32_t freepde;
     uint32_t mmap_n;
     bootinfo_mmap_t mmap[BOOTINFO_MAX_MEMMAP];
 } bootinfo_t;

@@ -46,7 +46,7 @@ bootinfo_t* kboot(uint32_t magic, uint32_t ebx) {
     kboot_tpg_identity(boot);
 
     kboot_tpg_map_kernel(boot);
-    tpg_write_cr3((uint32_t) boot->pagedir);
+    tpg_write_cr3((uint32_t) pagedir);
 
     kboot_tpg_enable_paging();
     return boot;
@@ -65,8 +65,6 @@ void kboot_panic(const char* text) {
 
 void kboot_read_mbinfo(bootinfo_t* boot, mbinfo_t* info) {
     boot->mem_high_phys = 0;
-    boot->pagedir = pagedir;
-    boot->freepde = 0;
 
     if ((info->flags & MBINFO_CMDLINE) != 0) {
         // TODO: parse command line.
@@ -79,11 +77,6 @@ void kboot_read_mbinfo(bootinfo_t* boot, mbinfo_t* info) {
         mb_mmap_t* mmap = (mb_mmap_t*) info->mmap_addr;
 
         while((uint32_t)mmap < info->mmap_addr + info->mmap_len) {
-            if (mmap->type != MBMMAP_AVAIL) {
-                mmap = (mb_mmap_t*)((uint32_t)mmap + mmap->size + sizeof(mmap->size));
-                continue;
-            }
-
             kboot_add_mmap(boot, mmap);
             mmap = (mb_mmap_t*)((uint32_t)mmap + mmap->size + sizeof(mmap->size));
         }
@@ -163,7 +156,7 @@ void kboot_tpg_identity(bootinfo_t* info) {
             flags |= I686_VM_PWT | I686_VM_PCD;
         }
 
-        info->pagedir[i] = phys | flags;
+        pagedir[i] = phys | flags;
     }
 }
 
@@ -172,7 +165,7 @@ void kboot_tpg_map_kernel(bootinfo_t* info) {
     uint32_t pde = mb_virt_base / I686_BIG_PAGE_SIZE;
 
     while (mapped < mb_size) {
-        info->pagedir[pde]
+        pagedir[pde]
             = phys | I686_VM_PRESENT
             | I686_VM_BIGPAGE | I686_VM_WRITE
             ;
@@ -181,8 +174,6 @@ void kboot_tpg_map_kernel(bootinfo_t* info) {
         phys += I686_BIG_PAGE_SIZE;
         pde++;
     }
-
-    info->freepde = pde;
 }
 
 uint32_t kboot_tpg_check_cpuf() {

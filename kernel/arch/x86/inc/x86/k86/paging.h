@@ -7,10 +7,14 @@
 extern "C" {
 #endif
 
+/* page directory address for . */
+#define PAGE_DIR_ADDR  0x6000
+
 #ifdef __ARCH_X86_INTERNALS__
 
 /**
  * initialize the `karch`.
+ * --> implemented in `k86/src/paging/early.c`.
  */
 void karch_paging_early_init();
 

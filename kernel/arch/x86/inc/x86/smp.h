@@ -15,7 +15,22 @@ extern "C" {
  */
 uint8_t karch_smp_supported();
 
+/**
+ * returns how many CPUs are available as CPUs.
+ */
+uint8_t karch_smp_cpus();
+
+/**
+ * returns which CPU is boot cpu or not.
+ */
+uint8_t karch_smp_bspid();
+
 #ifdef __ARCH_X86_INTERNALS__
+
+/**
+ * callback type to enter `kmain`. 
+ */
+typedef void(* karch_enter_kmain_t)();
 
 /**
  * initalize the minimal SMP module.
@@ -24,8 +39,16 @@ uint8_t karch_smp_supported();
  * 2) ret = 0: failed, fatal error.
  * 3) otherwise, this will not return to caller.  
  */
-int32_t karch_smp_init();
+int32_t karch_smp_init(karch_enter_kmain_t kmain);
 #endif
+
+/**
+ * get the current running CPU id.
+ * cpu id: lapic number.
+ * 
+ * if SMP is not supported, returns negative value.
+ */
+int32_t karch_smp_cpuid();
 
 /**
  * SMP CPU information.
@@ -53,6 +76,31 @@ uint8_t karch_smp_get_cpuinfo(uint8_t n, karch_smp_cpuinfo_t* info);
  * this can even works without SMP also but, APIC is required.
  */
 uint8_t karch_smp_get_cpuinfo_current(karch_smp_cpuinfo_t* info);
+
+/**
+ * try to lock the N'th CPU.
+ * returns zero if no such CPU available or couldn't lock.
+ */
+uint8_t karch_smp_trylock(uint8_t n);
+
+/**
+ * lock the N'th CPU.
+ * returns zero if no such CPU available.
+ */
+uint8_t karch_smp_lock(uint8_t n);
+
+/**
+ * unlock the N'th CPU.
+ * returns zero if no such CPU available.
+ */
+uint8_t karch_smp_unlock(uint8_t n);
+
+/**
+ * make the N'th CPU to jump to specified `cb`.
+ * this can be called only once.
+ * returns non zero value if succeed.
+ */
+uint8_t karch_smp_jump(uint8_t n, void(* cb)());
 #ifdef __cplusplus
 }
 #endif

@@ -54,6 +54,8 @@ extern void cpu_read_tsc(uint32_t* hi, uint32_t* lo);
 extern void cpu_mfence();
 extern void cpu_pause();
 
+extern void cpu_nop();
+
 #ifdef __cplusplus
 }
 #endif

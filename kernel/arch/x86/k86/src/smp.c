@@ -2,16 +2,19 @@
 #include <x86/smp.h>
 #include <x86/klib.h>
 #include <x86/env.h>
+#include <x86/k86.h>
 
 #include <x86/boot/bootinfo.h>
 #include <x86/k86/tables.h>
 #include <x86/k86/taskseg.h>
+#include <x86/k86/paging.h>
 
 #include <x86/legacy/i8259.h>
 #include <x86/legacy/i8253.h>
 
 #include <x86/peripherals/acpi.h>
 #include <x86/peripherals/apic.h>
+#include <x86/k86/cpulocal.h>
 
 #include <zeronix/kstring.h>
 
@@ -58,6 +61,15 @@ uint8_t smp_ready_n;
 karch_spinlock_t smp_cpu_lock[MAX_CPU]; // --> spinlocks for each CPUs.
 karch_cpuinfo_t smp_cpu_ident[MAX_CPU]; // --> SMP CPU identification.
 uint8_t smp_ready_bitmap[SMP_READY_BITMAP_BYTES];
+uint8_t smp_jump_bitmap[SMP_READY_BITMAP_BYTES];
+uint8_t smp_bsp_id;
+
+karch_enter_kmain_t smp_kmain;
+
+// --
+karch_spinlock_t smp_spinlock;
+void(* smp_jump_to)();
+int16_t smp_jump_id;
 
 // --
 void karch_smp_fill_info();
@@ -68,12 +80,30 @@ uint8_t karch_smp_supported() {
     return smp_avail;
 }
 
+uint8_t karch_smp_cpus() {
+    return smp_ready_n;
+}
+
+uint8_t karch_smp_bspid() {
+    if (smp_avail) {
+        return smp_bsp_id;
+    }
+
+    return 0;
+}
+
 // --
-int32_t karch_smp_init() {
+int32_t karch_smp_init(karch_enter_kmain_t kmain) {
     kmemset(smp_cpu_lock, 0, sizeof(smp_cpu_lock));
     kmemset(smp_cpu_ident, 0, sizeof(smp_cpu_ident));
+    kmemset(smp_jump_bitmap, 0, sizeof(smp_jump_bitmap));
+    karch_spinlock_init(&smp_spinlock);
+
     smp_avail = 0;
+    smp_kmain = kmain;
     smp_ready_n = 0;
+    smp_jump_to = 0;
+    smp_jump_id = -1;
 
     // --> SMP requires ACPI and APIC to work.
     if (!karch_acpi_supported() || !karch_apic_supported()) {
@@ -122,7 +152,8 @@ int32_t karch_smp_init() {
     karch_tables_flush_idt();
 
     // --
-    karch_stackmark_t* sm = karch_taskseg_get_stackmark(lapic_no);
+    karch_stackmark_t* sm 
+        = karch_taskseg_get_stackmark(lapic_no);
 
     // --> switch kernel stack to.
     switch_stack(sm, karch_smp_start_ap);
@@ -162,7 +193,7 @@ uint32_t karch_smp_prepare_ap_entry() {
     bootinfo_t* boot = karch_k86_bootinfo();
 
     smp_ap_id = 0;
-    smp_ap_pt = (uint32_t) boot->pagedir; // --> share BSP's page table.
+    smp_ap_pt = (uint32_t) PAGE_DIR_ADDR; // --> share BSP's page table.
 
     // --> address calculation was corrupted, so, I've rewrote this.
     smp_ap_gdt.base = SMP_BOOT_ADDR((uint32_t)&smp_ap_gdt_tab);
@@ -184,7 +215,7 @@ uint32_t karch_smp_prepare_ap_entry() {
  */
 void karch_smp_start_ap() {
     // karch_emergency_print("SMP: starting APs...");
-    uint8_t bsp_id = karch_lapic_number();
+    smp_bsp_id = karch_lapic_number();
 
     // --> backup bios reset vector.
     smp_bios_rstv = BIOS_RESET_VECTOR;
@@ -205,7 +236,7 @@ void karch_smp_start_ap() {
     // --> AP's ID pointer that points current ID value.
     uint32_t* ap_id = (uint32_t*) (ap_entry + ((uint32_t)&smp_ap_id - (uint32_t)&smp_ap_entry));
     for (uint8_t i = 0; i < smp_ready_n; ++i) {
-        if (bsp_id == i) {  // --> skip boot CPU.
+        if (smp_bsp_id == i) {  // --> skip boot CPU.
             continue;
         }
 
@@ -249,8 +280,13 @@ void karch_smp_start_ap() {
     // --> fill SMP informations for current running CPU.
     karch_smp_fill_info();
 
-    // TODO: run kmain on BSP.
-    
+    // --> setup CPU local variables for current CPU.
+    karch_cpulocals_init();
+
+    if (smp_kmain) {
+        smp_kmain();
+    }
+
     while(1);
 }
 
@@ -266,6 +302,15 @@ void karch_smp_fill_info() {
     // --> set mask on bitmap.
     uint32_t bit_i = SMP_BITMAP_INDEX(now_id);
     smp_ready_bitmap[bit_i] |= SMP_BITMAP_MASK(now_id);
+}
+
+int32_t karch_smp_cpuid() {
+    int32_t n = karch_lapic_number();
+    if (n < 0 || n >= smp_ready_n) {
+        return -1;
+    }
+
+    return n;
 }
 
 uint8_t karch_smp_get_cpuinfo(uint8_t n, karch_smp_cpuinfo_t* info) {
@@ -306,6 +351,75 @@ uint8_t karch_smp_get_cpuinfo_current(karch_smp_cpuinfo_t* info) {
     return karch_smp_get_cpuinfo(lapic_no, info);
 }
 
+uint8_t karch_smp_trylock(uint8_t n) {
+    if (n >= smp_ready_n) {
+        return 0;
+    }
+
+    return karch_spinlock_trylock(&smp_cpu_lock[n]);
+}
+
+uint8_t karch_smp_lock(uint8_t n) {
+    if (n >= smp_ready_n) {
+        return 0;
+    }
+
+    karch_spinlock_lock(&smp_cpu_lock[n]);
+    return 1;
+}
+
+uint8_t karch_smp_unlock(uint8_t n) {
+    if (n >= smp_ready_n) {
+        return 0;
+    }
+
+    karch_spinlock_unlock(&smp_cpu_lock[n]);
+    return 1;
+}
+
+uint8_t karch_smp_jump(uint8_t n, void(* cb)()) {
+    if (!smp_avail || n >= smp_ready_n) {
+        return 0;
+    }
+
+    if (n == smp_bsp_id) {
+        return 0;
+    }
+
+    karch_spinlock_lock(&smp_spinlock);
+    uint8_t* bits = &smp_jump_bitmap[SMP_BITMAP_INDEX(n)];
+
+    if ((((*bits)) & SMP_BITMAP_MASK(n)) != 0) {
+        karch_spinlock_unlock(&smp_spinlock);
+        return 0;
+    }
+
+    *bits |= SMP_BITMAP_MASK(n);
+    smp_jump_to = cb;
+    smp_jump_id = n;
+    karch_spinlock_unlock(&smp_spinlock);
+
+    while (1) {
+        if (!karch_spinlock_trylock(&smp_spinlock)) {
+            cpu_mfence();
+            cpu_nop();
+            continue;
+        }
+
+        if (smp_jump_id < 0) {
+            karch_spinlock_unlock(&smp_spinlock);
+
+            cpu_mfence();
+            cpu_nop();
+            return 1;
+        }
+
+        karch_spinlock_unlock(&smp_spinlock);
+        cpu_mfence();
+        cpu_nop();
+    }
+}
+
 /**
  * called from `karch_smp_startup_ap32`. (<-- smp_ap_entry)
  */
@@ -335,7 +449,6 @@ void karch_smp_boot_ap32() {
  */
 void karch_smp_init_ap32() {
     uint32_t now_id = smp_ap_id;
-    uint16_t* vga = (uint16_t*) 0xb8000;
 
     // --> identify current running AP.
     karch_smp_fill_info();
@@ -344,6 +457,37 @@ void karch_smp_init_ap32() {
     smp_ap_probe = now_id;
     cpu_mfence();
     
-    *(vga + (now_id + 1)) = ('0' + now_id) | (15 << 8);
+    // --> setup CPU local variables for current CPU.
+    karch_cpulocals_init();
+    void(* jump_to)(); 
+    
+    // --> wait for SMP jump-to signal.
+    karch_stackmark_t* sm = karch_taskseg_get_stackmark(now_id);
+    while(1) {
+        if (!karch_spinlock_trylock(&smp_spinlock)) {
+            cpu_mfence();
+            cpu_nop();
+            continue;
+        }
+
+        if (smp_jump_id < 0) {
+            karch_spinlock_unlock(&smp_spinlock);
+            
+            cpu_mfence();
+            cpu_nop();
+            continue;
+        }
+
+        // --> acknowledgement for `jump-to` signal.
+        jump_to = smp_jump_to;
+        smp_jump_id = -1;
+
+        karch_spinlock_unlock(&smp_spinlock);
+        
+        switch_stack(sm, jump_to);
+        break;
+    }
+
+    // --> impossible to reach here.
     while(1);
 }

@@ -46,6 +46,7 @@ global cpu_cmpxchg32;
 global cpu_read_tsc;
 global cpu_mfence;
 global cpu_pause;
+global cpu_nop;
 
 read_cr0:
     push ebp
@@ -457,4 +458,8 @@ cpu_mfence:
 
 cpu_pause:
     pause
+    ret
+
+cpu_nop:
+    nop
     ret
