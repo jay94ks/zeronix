@@ -22,11 +22,11 @@ uint32_t systick_freq;
 uint8_t systick_mode;                   // 0: i8253, 1: apic.
 
 // --
-void karch_systick_mask(uint8_t n);
-void karch_systick_unmask(uint8_t n);
+void karch_systick_mask(uint8_t);
+void karch_systick_unmask(uint8_t);
 
 /* redirect i8259 timer interrupt to SYSTICK. */
-void karch_systick_irq_handler(karch_irqn_t* irq) {
+void karch_systick_irq_handler(karch_irq_t*) {
     karch_irq_dispatch(IRQN_SYSTICK);
 }
 
@@ -48,7 +48,7 @@ void karch_systick_init() {
     }
 }
 
-void karch_systick_mask(uint8_t n) {
+void karch_systick_mask(uint8_t) {
     if (systick_mode) {
         karch_lapic_stop_timer();
         return;
@@ -58,7 +58,7 @@ void karch_systick_mask(uint8_t n) {
     karch_irq_unregister(&systick_irq);
 }
 
-void karch_systick_unmask(uint8_t n) {
+void karch_systick_unmask(uint8_t) {
     if (systick_mode) {
         karch_lapic_periodic_timer(SYSTICK_APIC_REQUIRED_FREQ); // --> 1 usec.
         return;

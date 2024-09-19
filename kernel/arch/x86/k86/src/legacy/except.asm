@@ -29,13 +29,14 @@ global karch_except_18;
 ; this calls `karch_except()` function.
 ; -----------------
 %macro KARCH_EXCEPT_INTR_xx 1
+    push 0      ; + 4 -- dummy error code.
     push ebp    ; + 4
     push ebx    ; + 4
     push eax    ; + 4
     mov ebp, esp
 
     ; [ebp + 16]: cs or sp / == cs: kernel mode.
-    cmp dword [ebp + 16], SEG_KERN_CS
+    cmp dword [ebp + 20], SEG_KERN_CS
     je .kern
     ; ip, cs, flags + sp, ss are pushed.
     mov ebx, 0  ; --> user to kernel switched.
@@ -43,9 +44,9 @@ global karch_except_18;
     .all:
         ; --> compute frame pointer.
         mov eax, ebp
-        add eax, 8
+        add eax, 12
 
-        ; call karch_except(uint32_t n, uint32_t k, karch_except_frame_t* frame).
+        ; call karch_except(uint32_t n, uint32_t k, karch_intr_frame_t* frame).
         push eax        ; --> frame.
         push ebx        ; --> k
 
@@ -58,6 +59,54 @@ global karch_except_18;
         pop eax
         pop ebx
         pop ebp
+        add esp, 4      ; remove error code.
+        iret
+
+    .kern:
+        ; ip, cs, flags are pushed.
+        mov ebx, 1  ; --> not switched.
+        jmp .all
+%endmacro
+
+; -----------------
+; interrupt handler body. (has error code)
+;   --> https://wiki.osdev.org/Exceptions.
+;
+; N: 8, 10 ~ 14, 17, 21, 29, 30
+; this calls `karch_except()` function.
+; -----------------
+%macro KARCH_EXCEPT_INTR_ERR_xx 1
+    push ebp    ; + 4
+    push ebx    ; + 4
+    push eax    ; + 4
+    mov ebp, esp
+
+    ; [ebp + 20]: cs or sp / == cs: kernel mode.
+    cmp dword [ebp + 20], SEG_KERN_CS
+    je .kern
+
+    ; error-code, ip, cs, flags + sp, ss are pushed.
+    mov ebx, 0  ; --> user to kernel switched.
+
+    .all:
+        ; --> compute frame pointer.
+        mov eax, ebp
+        add eax, 12
+
+        ; call karch_except(uint32_t n, uint32_t k, karch_intr_frame_t* frame).
+        push eax        ; --> frame.
+        push ebx        ; --> k
+
+        mov eax, %1     ; --> n
+        push eax
+
+        call karch_except
+
+        mov esp, ebp
+        pop eax
+        pop ebx
+        pop ebp
+        add esp, 4      ; remove error code.
         iret
 
     .kern:
@@ -91,31 +140,31 @@ karch_except_07:
     KARCH_EXCEPT_INTR_xx 7
 
 karch_except_08:
-    KARCH_EXCEPT_INTR_xx 8
+    KARCH_EXCEPT_INTR_ERR_xx 8
 
 karch_except_09:
     KARCH_EXCEPT_INTR_xx 9
 
 karch_except_10:
-    KARCH_EXCEPT_INTR_xx 10
+    KARCH_EXCEPT_INTR_ERR_xx 10
     
 karch_except_11:
-    KARCH_EXCEPT_INTR_xx 11
+    KARCH_EXCEPT_INTR_ERR_xx 11
     
 karch_except_12:
-    KARCH_EXCEPT_INTR_xx 12
+    KARCH_EXCEPT_INTR_ERR_xx 12
     
 karch_except_13:
-    KARCH_EXCEPT_INTR_xx 13
+    KARCH_EXCEPT_INTR_ERR_xx 13
     
 karch_except_14:
-    KARCH_EXCEPT_INTR_xx 14
+    KARCH_EXCEPT_INTR_ERR_xx 14
     
 karch_except_16:
     KARCH_EXCEPT_INTR_xx 16
     
 karch_except_17:
-    KARCH_EXCEPT_INTR_xx 17
+    KARCH_EXCEPT_INTR_ERR_xx 17
     
 karch_except_18:
     KARCH_EXCEPT_INTR_xx 18

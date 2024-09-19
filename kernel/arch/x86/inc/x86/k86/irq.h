@@ -20,7 +20,7 @@ void karch_irq_dispatch(uint8_t n);
 #endif
 
 /* get irq count. */
-uint8_t karch_irq_count();
+uint16_t karch_irq_count();
 
 /* register an IRQ handler. */
 uint8_t karch_irq_register(uint8_t n, karch_irq_t* irq);
@@ -60,7 +60,7 @@ karch_irq_ovr_t* karch_irq_get_override(uint8_t n);
 /**
  * set the hardware overrides.
  */
-void karch_irq_set_override(uint8_t n, karch_irq_ovr_t* ovr);
+uint8_t karch_irq_set_override(uint8_t n, karch_irq_ovr_t* ovr);
 
 /**
  * get the current interrupt frame.

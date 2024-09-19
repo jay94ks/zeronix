@@ -8,6 +8,7 @@
 #include <x86/k86/tables.h>
 #include <x86/k86/taskseg.h>
 #include <x86/k86/paging.h>
+#include <x86/k86/cpulocal.h>
 #include <x86/k86/mmap.h>
 
 #include <x86/legacy/i8259.h>

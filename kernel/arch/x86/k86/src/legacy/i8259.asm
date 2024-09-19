@@ -26,13 +26,14 @@ extern karch_i8259_hwint;
 ; this calls `karch_i8259_hwint()` function.
 ; -----------------
 %macro KARCH_i8259_HWINT_xx 1
+    push 0      ; dummy error code.
     push ebp    ; + 4
     push ebx    ; + 4
     push eax    ; + 4
     mov ebp, esp
 
-    ; [ebp + 16]: cs or sp / == cs: kernel mode.
-    cmp dword [ebp + 16], SEG_KERN_CS
+    ; [ebp + 20]: cs or sp / == cs: kernel mode.
+    cmp dword [ebp + 20], SEG_KERN_CS
     je .kern
     ; ip, cs, flags + sp, ss are pushed.
     mov ebx, 0  ; --> user to kernel switched.
@@ -40,7 +41,7 @@ extern karch_i8259_hwint;
     .all:
         ; --> compute frame pointer.
         mov eax, ebp
-        add eax, 8
+        add eax, 12
 
         ; call karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame).
         push eax        ; --> frame.
@@ -55,6 +56,7 @@ extern karch_i8259_hwint;
         pop eax
         pop ebx
         pop ebp
+        add esp, 4      ; remove dummy error code.
         iret
 
     .kern:

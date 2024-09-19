@@ -1085,7 +1085,7 @@ void karch_ioapic_set_irq(uint8_t irq) {
 
             lo |= target_irq->vector;
             karch_ioapic_write_redirector(
-                apic->addr, target_irq->pin, hi, lo
+                (void*) apic->addr, target_irq->pin, hi, lo
             );
 
             break;

@@ -18,6 +18,9 @@ void karch_paging_early_init(bootinfo_t* info) {
     karch_page_identity(kern_pagedir, info);
     karch_page_remap_kernel(kern_pagedir, info);
 
+    // 20M.
+    kern_pagedir[5] &= ~I686_VM_PRESENT;
+
     write_cr3((uint32_t) kern_pagedir);
 }
 
@@ -39,7 +42,7 @@ void karch_page_identity(uint32_t* pagedir, bootinfo_t* info) {
     }
 }
 
-void karch_page_remap_kernel(uint32_t* pagedir, bootinfo_t* info) {
+void karch_page_remap_kernel(uint32_t* pagedir, bootinfo_t*) {
     uint32_t mapped = 0, phys = mb_phys_base;
     uint32_t pde = mb_virt_base / I686_BIG_PAGE_SIZE;
 

@@ -5,6 +5,10 @@
 #include <x86/k86/systick.h>
 #include <x86/k86/irq.h>
 
+karch_irq_frame_t* karch_irq_get_frame_cv() {
+    return (karch_irq_frame_t*) karch_irq_get_frame();
+}
+
 /**
  * exported to <zeronix/arch/arch.h>.
  */
@@ -24,6 +28,6 @@ void karch_interface(karch_t* arch) {
     arch->irq.unreg = karch_irq_unregister;
     arch->irq.mask = karch_irq_mask;
     arch->irq.unmask = karch_irq_unmask;
-    //arch->irq.get_frame = karch_irq_get_frame;
+    arch->irq.get_frame = karch_irq_get_frame_cv;
     
 }

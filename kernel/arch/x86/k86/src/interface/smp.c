@@ -33,6 +33,8 @@ uint8_t karch_interface_smp(karch_smp_t* smp) {
         smp->exec = karch_smp_jump;
         smp->emit_ipi = smp_emit_ipi;
     }
+
+    return 1;
 }
 
 uint8_t smp_is_boot(uint8_t id) {

@@ -7,6 +7,7 @@
 #include <x86/klib.h>
 
 #include <zeronix/arch/irq.h>
+#include <zeronix/kstring.h>
 
 // --
 karch_irq_t* irq_registry[MAX_IRQ];
@@ -30,12 +31,12 @@ void karch_irq_init() {
     irq_default.unmask = karch_irq_unmask_phys;
 }
 
-uint8_t karch_irq_count() {
+uint16_t karch_irq_count() {
     return MAX_IRQ;
 }
 
 karch_intr_frame_t* karch_irq_get_frame() {
-    int16_t cpu_n = karch_smp_cpuid();
+    int32_t cpu_n = karch_lapic_number();
     if (cpu_n < 0) {
         cpu_n = 0;
     }
@@ -44,7 +45,7 @@ karch_intr_frame_t* karch_irq_get_frame() {
 }
 
 void karch_irq_set_frame(karch_intr_frame_t* frame) {
-    int16_t cpu_n = karch_smp_cpuid();
+    int32_t cpu_n = karch_lapic_number();
     if (cpu_n < 0) {
         cpu_n = 0;
     }
@@ -82,7 +83,7 @@ karch_irq_ovr_t* karch_irq_get_override(uint8_t n) {
     return irq_ovrs[n];
 }
 
-void karch_irq_set_override(uint8_t n, karch_irq_ovr_t* ovr) {
+uint8_t karch_irq_set_override(uint8_t n, karch_irq_ovr_t* ovr) {
     if (n >= MAX_IRQ) {
         return 0;
     }
@@ -92,6 +93,7 @@ void karch_irq_set_override(uint8_t n, karch_irq_ovr_t* ovr) {
     }
 
     irq_ovrs[n] = ovr;
+    return 1;
 }
 
 void karch_irq_mask(uint8_t n) {

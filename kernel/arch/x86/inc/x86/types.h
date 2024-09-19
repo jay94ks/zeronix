@@ -13,7 +13,7 @@ typedef uint16_t karch_reg16_t;
  * interrupt frame.
  */
 struct karch_x86_intr_frame_t {
-    karch_reg32_t err;
+    karch_reg32_t err;  // --> if zero, not an error.
 
     /* hardware defined. */
     karch_reg32_t ip;   // 12
