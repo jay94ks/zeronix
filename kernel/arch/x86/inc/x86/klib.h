@@ -8,6 +8,7 @@ extern "C" {
 
 // --> klib.asm
 extern uint32_t read_cr0();
+extern uint32_t read_cr3();
 extern uint32_t read_cr4();
 
 extern void write_cr0(uint32_t cr0); 

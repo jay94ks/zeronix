@@ -55,8 +55,8 @@ void karch_k86_init(bootinfo_t* info) {
 
     // --> re-initialize early paging.
     //   : after this call, bootstrap code is not needed anymore.
-    karch_paging_early_init(info);
     karch_mmap_init(info);
+    karch_paging_early_init(info);
 
     // --> initialize the ACPI.
     if (karch_acpi_init()) {
