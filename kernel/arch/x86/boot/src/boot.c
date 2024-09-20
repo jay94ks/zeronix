@@ -24,7 +24,6 @@ void kboot_tpg_enable_paging();
 
 // --
 #define KBOOT_VIDEO ((uint16_t*) 0xb8000)
-#define MASK_ADDR_4MB(x) ((x) & I686_VM_ADDR_MASK_4MB)
 
 enum {
     TPG_CPUF_PAE = 1,   // --> PAE support.

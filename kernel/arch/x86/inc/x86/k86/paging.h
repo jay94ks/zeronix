@@ -1,6 +1,7 @@
 #ifndef __KERNEL_ARCH_X86_INC_X86_K86_PAGING_H__
 #define __KERNEL_ARCH_X86_INC_X86_K86_PAGING_H__
 
+#include <zeronix/arch/paging.h>
 #include <x86/types.h>
 #ifdef __ARCH_X86_INTERNALS__
 #include <x86/boot/bootinfo.h>
@@ -68,7 +69,7 @@ karch_paddr_t karch_paging_get_pagedir_phys(karch_pagedir_t pagedir, karch_vaddr
  * get the physical base from specified virtual address.
  * this always success, and this looks just `vaddr`s 4K paging address.
  */
-karch_paddr_off_t karch_paging_get_pagetbl_phys(karch_pagetbl_t pagetbl, karch_vaddr_t vaddr);
+karch_paddr_t karch_paging_get_pagetbl_phys(karch_pagetbl_t pagetbl, karch_vaddr_t vaddr);
 
 /**
  * translate `vaddr` to `paddr`, 
