@@ -93,12 +93,9 @@ void karch_task_switch_to(karch_task_t* task) {
         return;
     }
 
-    // load_tr(SEG_TSS(cpu));
-    *tss = task->tss;
-    task_far_jump(0, SEG_TSS(cpu));
-
-        //task_switch_swint();
+        //
     if (!karch_smp_supported()) {
+        task_switch_swint();
         return;
     }
 
