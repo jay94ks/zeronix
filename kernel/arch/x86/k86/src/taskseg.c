@@ -24,15 +24,11 @@ extern void* _karch_tss0_stack;
 #define AMD_MSR_EFER		            0xC0000080	/* extended features msr */
 #define AMD_MSR_STAR		            0xC0000081	/* SYSCALL params msr */
 
-// --> from `tasks/task.c`.
-extern void karch_task_dummy_init();
-
 // --
 void karch_taskseg_init() {
     kmemset(tss, 0, sizeof(tss));
     kmemset(tss_sm, 0, sizeof(tss_sm));
 
-    karch_task_dummy_init();
     karch_taskseg_setup(0, 0);
 }
 

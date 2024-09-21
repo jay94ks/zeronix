@@ -49,7 +49,7 @@ typedef enum {
     IRQN_EXC_MACHINE_CHECK  = 18 + IRQ_EXCEPTION_OFFSET,
 
     /* APIC Special IRQs. */
-    IRQN_SCHED      = 0xf1,
+    IRQN_SCHED      = 0xf1, // --> this will not be dispatched to anywhere.
     IRQN_CPU_HALT   = 0xf2,
     IRQN_SPURIOUS   = 0xff,
     IRQN_ERROR      = 0xfe,

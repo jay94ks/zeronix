@@ -8,6 +8,20 @@
 extern "C" {
 #endif
 
+#ifdef __ARCH_X86_INTERNALS__
+/**
+ * initialize kernels tasks.
+ */
+void karch_task_kerns_init();
+
+/**
+ * called when task switching interrupt received.
+ */
+void karch_task_switch_intr(
+    karch_intr_frame_t* frame,
+    karch_intr_regs_t* regs);
+#endif 
+
 /**
  * initialize the task structure to default.
  */

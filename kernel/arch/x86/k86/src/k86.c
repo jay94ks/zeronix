@@ -24,6 +24,9 @@
 #include <zeronix/kstring.h>
 
 // --
+karch_task_t task_kmain;
+
+// --
 void karch_k86_load_segs(uint8_t n);
 
 // --> defined at head.asm.
@@ -50,6 +53,9 @@ void karch_k86_init(bootinfo_t* info) {
     
     // --> shift to new kernel segment.
     karch_k86_load_segs(0);
+
+    // --> initialize minimal tasking env.
+    karch_task_kerns_init();
 
     // --> re-initialize early paging.
     //   : after this call, bootstrap code is not needed anymore.
@@ -94,6 +100,14 @@ void karch_k86_enter_kmain() {
     karch_systick_init();
     karch_fpu_init();
 
+    // --> startup the initial task.
+    karch_task_init(&task_kmain);
+    karch_task_set_exec(&task_kmain, jump_to_kmain, sm);
+    karch_task_switch(&task_kmain);
+
     // --
-    switch_stack(sm, jump_to_kmain);
+    //switch_stack(sm, jump_to_kmain);
+    while(1) {
+        cpu_hlt();
+    }
 }

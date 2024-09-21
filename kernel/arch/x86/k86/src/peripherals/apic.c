@@ -13,6 +13,7 @@
 #include <x86/legacy/i8259.h>
 #include <x86/smp.h>
 
+#include <x86/tasks/task.h>
 #include <zeronix/kstring.h>
 
 // --
@@ -209,6 +210,10 @@ karch_lapic_info_t lapic_info;
 // --
 karch_ioapic_t ioapic[MAX_IOAPIC];
 karch_ioapic_irq_t ioapic_irq[MAX_IOAPIC_IRQ];
+
+// --> we need to get replacement mapping for IRQ0 (PIT) and IRQ8.
+//   : https://wiki.osdev.org/HPET#.22Legacy_replacement.22_mapping
+
 uint16_t ioapic_irq_ovr[MAX_IOAPIC_IRQ];    // --> stores POL (2), TRG (2), SRC_INTR (8).
 uint8_t ioapic_irq_rvo[MAX_IOAPIC_IRQ];     // --> stores GBL_INTR.
 uint8_t ioapic_n;
@@ -288,9 +293,6 @@ uint8_t karch_apic_init() {
         lapic_bsp = lapic->id;
     }
 
-    // --> we need to get replacement mapping for IRQ0 (PIT) and IRQ8.
-    //   : https://wiki.osdev.org/HPET#.22Legacy_replacement.22_mapping
-    
     return 1;
 }
 
@@ -497,6 +499,11 @@ void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_i
  * `n` value: refer `gv_apic_zb`.
 */
 void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_intr_regs_t* regs) {
+    if (n == 0xf1) {
+        karch_task_switch_intr(frame, regs);
+        return;
+    }
+
     karch_irq_intr_begin(frame);
 
     if (n >= 0xf0 && n <= 0xff) {

@@ -41,8 +41,29 @@ struct __karch_irq_frame_t {
     uint32_t ss;
 } __packed;
 
+/**
+ * registers that captured from interrupt handlers.
+ */
+struct __karch_irq_regs_t {
+    uint32_t cr3;
+    
+    uint32_t gs;
+    uint32_t fs;
+    uint32_t ss;    // --> do not modify stack segment this.
+    uint32_t ds;
+    uint32_t es;
+    
+    uint32_t flags;
+
+    uint32_t dx;
+    uint32_t cx;
+    uint32_t bx;
+    uint32_t ax;
+} __packed;
+
 /* short hand. */
 typedef struct __karch_irq_frame_t karch_irq_frame_t;
+typedef struct __karch_irq_regs_t karch_irq_regs_t;
 
 /**
  * karch IRQ device. 

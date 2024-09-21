@@ -34,6 +34,9 @@
         "interface.h": "c",
         "systick.h": "c",
         "irq.h": "c",
-        "irqn.h": "c"
+        "irqn.h": "c",
+        "fpu.h": "c",
+        "task.inc": "nasm",
+        "task.h": "c"
     }
 }

@@ -39,9 +39,6 @@ typedef struct {
     /* unlock CPU-specific spinlock. */
     uint8_t (* unlock)(uint8_t id);
 
-    /* execute a callback on the CPU, this can be called only once. */
-    uint8_t (* exec)(uint8_t id, karch_smp_exec_t cb);
-
     /* emit an IPI to specified CPU. */
     uint8_t (* emit_ipi)(uint8_t id, uint8_t irq);
 } karch_smp_t;

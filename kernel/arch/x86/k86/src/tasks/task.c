@@ -8,20 +8,19 @@
 #include <x86/smp.h>
 
 #include <x86/peripherals/apic.h>
-
 #include <zeronix/kstring.h>
 
 // --
-extern void task_far_jump(uint32_t ip, uint16_t cs);
+//extern void task_far_jump(uint32_t ip, uint16_t cs);
 extern void task_switch_swint();
 
-// --> dummy tasks.
-karch_task_t task_dummy[MAX_CPU] __aligned(8);
+// --> kernel tasks.
+karch_task_t task_kern[MAX_CPU] __aligned(16);
 karch_spinlock_t task_lock;
 
 // --
-void karch_task_dummy_init() {
-    kmemset(&task_dummy, 0, sizeof(task_dummy));
+void karch_task_kerns_init() {
+    kmemset(&task_kern, 0, sizeof(task_kern));
     karch_spinlock_init(&task_lock);
 }
 
@@ -90,7 +89,9 @@ karch_tsret_t karch_task_switch(karch_task_t* task) {
 
 karch_tsret_t karch_task_switch_to_cpu(uint8_t n, karch_task_t* task) {
     // --> set process.
-    karch_stackmark_t* sm = karch_taskseg_get_stackmark(n);
+    volatile karch_stackmark_t* sm
+        = karch_taskseg_get_stackmark(n);
+        
     karch_tss_t* tss = karch_taskseg_get(n);
 
     if (!sm || !tss) {
@@ -109,7 +110,7 @@ karch_tsret_t karch_task_switch_to_cpu(uint8_t n, karch_task_t* task) {
     else {
         // --> set dummy as prev task if missing.
         if (!sm->prev) {
-            sm->prev = &task_dummy[n];
+            sm->prev = &task_kern[n];
         }
 
         // --> set the next task.

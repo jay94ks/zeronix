@@ -5,6 +5,7 @@
 #include <zeronix/arch/smp.h>
 #include <zeronix/arch/mmap.h>
 #include <zeronix/arch/irq.h>
+#include <zeronix/arch/paging.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,6 +28,9 @@ typedef struct {
 
     /* IRQ device.*/
     karch_irqdev_t irq;
+
+    /* paging interface. */
+    karch_paging_t paging;
     
     /* SYSTICK frequency in hz. */
     uint32_t systick_freq;
