@@ -30,7 +30,6 @@ uint8_t karch_interface_smp(karch_smp_t* smp) {
         smp->trylock = karch_smp_trylock;
         smp->lock = karch_smp_lock;
         smp->unlock = karch_smp_unlock;
-        smp->exec = karch_smp_jump;
         smp->emit_ipi = smp_emit_ipi;
     }
 

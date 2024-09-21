@@ -489,10 +489,6 @@ void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_i
         karch_lapic_eoi();
     }
 
-    if (!k) {
-        // --> switch to user if possible.
-    }
-
     karch_irq_intr_end();
 }
 
@@ -512,10 +508,6 @@ void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_i
     // --> emit EIO to Local APIC.
     karch_lapic_eoi();
     karch_irq_intr_end();
-    
-    if (!k) {
-        // --> switch to user if possible.
-    }
 }
 
 void karch_lapic_enable_msr() {

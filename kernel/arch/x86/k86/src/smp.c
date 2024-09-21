@@ -62,13 +62,10 @@ karch_spinlock_t smp_cpu_lock[MAX_CPU];             // --> spinlocks for each CP
 karch_cpuinfo_t smp_cpu_ident[MAX_CPU];             // --> SMP CPU identification.
 
 uint8_t smp_ready_bitmap[SMP_READY_BITMAP_BYTES];
-uint8_t smp_jump_bitmap[SMP_READY_BITMAP_BYTES];
 uint8_t smp_bsp_id;
 
 // --
 karch_spinlock_t smp_spinlock;
-void(* smp_jump_to)();
-int16_t smp_jump_id;
 
 // --
 void karch_smp_fill_info();
@@ -95,13 +92,10 @@ uint8_t karch_smp_bspid() {
 int32_t karch_smp_init() {
     kmemset(smp_cpu_lock, 0, sizeof(smp_cpu_lock));
     kmemset(smp_cpu_ident, 0, sizeof(smp_cpu_ident));
-    kmemset(smp_jump_bitmap, 0, sizeof(smp_jump_bitmap));
     karch_spinlock_init(&smp_spinlock);
 
     smp_avail = 0;
     smp_ready_n = 0;
-    smp_jump_to = 0;
-    smp_jump_id = -1;
 
     // --> SMP requires ACPI and APIC to work.
     if (!karch_acpi_supported() || !karch_apic_supported()) {
@@ -325,10 +319,6 @@ void karch_smp_fill_info() {
 
     // --> identify current running BSP.
     karch_env_cpuinfo(&smp_cpu_ident[now_id]);
-
-    // --> set mask on bitmap.
-    // uint32_t bit_i = SMP_BITMAP_INDEX(now_id);
-    // smp_ready_bitmap[bit_i] |= SMP_BITMAP_MASK(now_id);
 }
 
 int32_t karch_smp_cpuid() {
@@ -404,49 +394,6 @@ uint8_t karch_smp_unlock(uint8_t n) {
     return 1;
 }
 
-uint8_t karch_smp_jump(uint8_t n, void(* cb)()) {
-    if (!smp_avail || n >= smp_ready_n) {
-        return 0;
-    }
-
-    if (n == smp_bsp_id) {
-        return 0;
-    }
-
-    karch_spinlock_lock(&smp_spinlock);
-    uint8_t* bits = &smp_jump_bitmap[SMP_BITMAP_INDEX(n)];
-
-    if ((((*bits)) & SMP_BITMAP_MASK(n)) != 0) {
-        karch_spinlock_unlock(&smp_spinlock);
-        return 0;
-    }
-
-    *bits |= SMP_BITMAP_MASK(n);
-    smp_jump_to = cb;
-    smp_jump_id = n;
-    karch_spinlock_unlock(&smp_spinlock);
-
-    while (1) {
-        if (!karch_spinlock_trylock(&smp_spinlock)) {
-            cpu_mfence();
-            cpu_nop();
-            continue;
-        }
-
-        if (smp_jump_id < 0) {
-            karch_spinlock_unlock(&smp_spinlock);
-
-            cpu_mfence();
-            cpu_nop();
-            return 1;
-        }
-
-        karch_spinlock_unlock(&smp_spinlock);
-        cpu_mfence();
-        cpu_nop();
-    }
-}
-
 /**
  * called from `karch_smp_startup_ap32`. (<-- smp_ap_entry)
  */
@@ -497,33 +444,8 @@ void karch_smp_init_ap32() {
     // --> set the ready bit.
     karch_smp_set_ready(now_id);
     
-    // --> then, wait for SMP jump-to signal.
-    karch_stackmark_t* sm = karch_taskseg_get_stackmark(now_id);
+    // --> idle.
     while(1) {
-        if (!karch_spinlock_trylock(&smp_spinlock)) {
-            cpu_mfence();
-            cpu_nop();
-            continue;
-        }
-
-        if (smp_jump_id < 0) {
-            karch_spinlock_unlock(&smp_spinlock);
-            
-            cpu_mfence();
-            cpu_nop();
-            continue;
-        }
-
-        // --> acknowledgement for `jump-to` signal.
-        jump_to = smp_jump_to;
-        smp_jump_id = -1;
-
-        karch_spinlock_unlock(&smp_spinlock);
-        
-        switch_stack(sm, jump_to);
-        break;
+        cpu_hlt();
     }
-
-    // --> impossible to reach here.
-    while(1);
 }

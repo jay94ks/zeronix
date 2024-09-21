@@ -68,8 +68,4 @@ void karch_except(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_intr_
     karch_irq_dispatch(irqn);
 
     karch_irq_intr_end();
-    if (!k) {
-        // --> switch to user if possible.
-    }
-
 }

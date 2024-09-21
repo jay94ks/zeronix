@@ -89,13 +89,6 @@ uint8_t karch_smp_lock(uint8_t n);
  * returns zero if no such CPU available.
  */
 uint8_t karch_smp_unlock(uint8_t n);
-
-/**
- * make the N'th CPU to jump to specified `cb`.
- * this can be called only once.
- * returns non zero value if succeed.
- */
-uint8_t karch_smp_jump(uint8_t n, void(* cb)());
 #ifdef __cplusplus
 }
 #endif

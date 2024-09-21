@@ -8,6 +8,8 @@ TRAPCODE_APIC_SWINT equ 3
 ; stack mark has three members: prev (8), next (4), cpu (0)
 TASK_CUR_PROC_PTR   equ 28
 
+KERN_CR3            equ 0x6000
+
 ; --------------------------------
 ; `karch_task_t` field map:
 ;
@@ -40,6 +42,16 @@ TASK_CUR_PROC_PTR   equ 28
 
     mov eax, cr3
     push eax
+
+    ; --> load kernel's page directory.
+    cmp eax, KERN_CR3
+    je .pass
+
+    ; --> this will be restored when `RESTORE_REGS` get called.
+    mov eax, KERN_CR3
+    mov cr3, eax
+
+    .pass:
 %endmacro
 
 %macro RESTORE_REGS 0

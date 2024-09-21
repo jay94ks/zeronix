@@ -17,10 +17,12 @@ extern void task_switch_swint();
 
 // --> dummy tasks.
 karch_task_t task_dummy[MAX_CPU] __aligned(8);
+karch_spinlock_t task_lock;
 
 // --
 void karch_task_dummy_init() {
     kmemset(&task_dummy, 0, sizeof(task_dummy));
+    karch_spinlock_init(&task_lock);
 }
 
 // --
@@ -59,6 +61,17 @@ void karch_task_set_user(karch_task_t* task) {
     tss->gs = tss->ss = SEG_SEL(GDT_USER_DS);
 }
 
+uint8_t karch_task_set_pagedir(karch_task_t* task, karch_pagedir_t pagedir) {
+    karch_tss_t* tss = &task->tss;
+
+    if (!karch_paging_verify_pagedir(pagedir)) {
+        return 0;
+    }
+
+    tss->cr3 = (uint32_t)(pagedir);
+    return 1;
+}
+
 void karch_task_set_exec(
     karch_task_t* task, karch_vaddr_t ip, karch_vaddr_t sp)
 {
@@ -66,45 +79,57 @@ void karch_task_set_exec(
     task->tss.sp = sp;   
 }
 
-void karch_task_switch_to(karch_task_t* task) {
-    int32_t cpu = karch_smp_cpuid();
-    if (cpu < 0) {
-        cpu = 0;
+karch_tsret_t karch_task_switch(karch_task_t* task) {
+    int16_t n = karch_smp_cpuid();
+    if (n < 0) {
+        n = 0;
     }
 
+    return karch_task_switch_to_cpu(n, task);
+}
+
+karch_tsret_t karch_task_switch_to_cpu(uint8_t n, karch_task_t* task) {
     // --> set process.
-    karch_stackmark_t* sm
-        = karch_taskseg_get_stackmark(cpu);
+    karch_stackmark_t* sm = karch_taskseg_get_stackmark(n);
+    karch_tss_t* tss = karch_taskseg_get(n);
 
-    karch_tss_t* tss
-        = karch_taskseg_get(cpu);
-
-    // --> set dummy as prev task if missing.
-    if (!sm->prev) {
-        sm->prev = &task_dummy[cpu];
+    if (!sm || !tss) {
+        return KTSRET_NO_CPU;
     }
 
-    // --> set the next task.
-    sm->next = task;
+    if (!karch_spinlock_trylock(&task_lock)) {
+        return KTSRET_BUSY;
+    }
+
+    if (sm->prev == task) {
+        karch_spinlock_unlock(&task_lock);
+        return KTSRET_ALREADY;
+    }
+
+    else {
+        // --> set dummy as prev task if missing.
+        if (!sm->prev) {
+            sm->prev = &task_dummy[n];
+        }
+
+        // --> set the next task.
+        sm->next = task;
+    }
+
+    karch_spinlock_unlock(&task_lock);
 
     // --> if under interrupt frame, 
     //   : no need to trigger switching interrupt.
     if (karch_irq_get_frame()) {
-        return;
+        return KTSRET_OKAY;
     }
 
-        //
     if (!karch_smp_supported()) {
         task_switch_swint();
-        return;
+        return KTSRET_OKAY;
     }
 
-    karch_lapic_emit_ipi(
-        0xf1, cpu, LAPICIPI_SPECIFIC);
-
-    // --> wait for ipi execution.
-    while(1) {
-        cpu_hlt();
-    }
+    karch_lapic_emit_ipi(0xf1, n, LAPICIPI_SPECIFIC);
+    return KTSRET_OKAY;
 }
 

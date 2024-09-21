@@ -199,8 +199,4 @@ void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_
     // --> emit EOI to PIC master and slave.
     karch_i8259_eoi(n);
     karch_irq_intr_end();
-
-    if (!k) {
-        // --> switch to user if possible.
-    }
 }
