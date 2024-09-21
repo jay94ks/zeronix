@@ -9,13 +9,14 @@ extern karch_apic_zbint;
 
 ; usage: KARCH_APIC_HWINT_xx [IRQN]
 %macro KARCH_APIC_HWINT_xx 1
+    push 0
     push ebp    ; + 4
     push ebx    ; + 4
     push eax    ; + 4
     mov ebp, esp
 
     ; [ebp + 16]: cs or sp / == cs: kernel mode.
-    cmp dword [ebp + 16], SEG_KERN_CS
+    cmp dword [ebp + 20], SEG_KERN_CS
     je .kern
     ; ip, cs, flags + sp, ss are pushed.
     mov ebx, 0  ; --> user to kernel switched.
@@ -23,7 +24,7 @@ extern karch_apic_zbint;
     .all:
         ; --> compute frame pointer.
         mov eax, ebp
-        add eax, 8
+        add eax, 12     ; --> for dummy error code.
 
         ; call karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame).
         push eax        ; --> frame.
@@ -38,6 +39,7 @@ extern karch_apic_zbint;
         pop eax
         pop ebx
         pop ebp
+        add esp, 4      ; remove error code.
         iret
 
     .kern:
@@ -48,13 +50,14 @@ extern karch_apic_zbint;
 
 ; usage: KARCH_APIC_INTR [IRQN]
 %macro KARCH_APIC_INTR  1
+    push 0
     push ebp    ; + 4
     push ebx    ; + 4
     push eax    ; + 4
     mov ebp, esp
 
     ; [ebp + 16]: cs or sp / == cs: kernel mode.
-    cmp dword [ebp + 16], SEG_KERN_CS
+    cmp dword [ebp + 20], SEG_KERN_CS
     je .kern
     ; ip, cs, flags + sp, ss are pushed.
     mov ebx, 0  ; --> user to kernel switched.
@@ -62,7 +65,7 @@ extern karch_apic_zbint;
     .all:
         ; --> compute frame pointer.
         mov eax, ebp
-        add eax, 8
+        add eax, 12     ; --> for dummy error code.
 
         ; call karch_apic_hwint(uint32_t k, karch_intr_frame_t* frame).
         push eax        ; --> frame.
@@ -77,6 +80,7 @@ extern karch_apic_zbint;
         pop eax
         pop ebx
         pop ebp
+        add esp, 4      ; remove error code.
         iret
 
     .kern:

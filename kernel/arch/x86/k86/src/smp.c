@@ -460,11 +460,15 @@ void karch_smp_boot_ap32() {
         return;
     }
 
+    karch_tss_t* tss = karch_taskseg_get(n);
     karch_stackmark_t* sm = karch_taskseg_get_stackmark(n);
 
     // --> reload IDT/GDT here to clear SMP boot address.
     karch_tables_flush_gdt();
     karch_tables_flush_idt();
+
+    load_ldt(SEG_SEL(GDT_LDT));
+    load_tr(SEG_TSS(n));
 
     // --> switch stack space, then continue to `karch_smp_init_ap32`.
     switch_stack(sm, karch_smp_init_ap32);

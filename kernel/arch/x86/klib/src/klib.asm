@@ -19,6 +19,7 @@ global load_ldt;
 global load_tr;
 global store_gdt;
 global store_idt;
+global store_tr;
     
 global load_kern_cs
 global load_ds
@@ -242,6 +243,23 @@ store_idt:
 
     mov eax, [ebp + 8]
     sidt [eax]
+
+    mov esp, ebp
+    pop ebp
+    ret
+
+store_tr:
+    push ebp
+    mov ebp, esp
+
+    ; make stack temp variable.
+    xor eax, eax
+    push eax
+
+    str [esp]
+
+    ; load stack temp variable.
+    pop eax
 
     mov esp, ebp
     pop ebp

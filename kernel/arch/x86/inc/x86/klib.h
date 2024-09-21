@@ -26,6 +26,7 @@ extern void load_ldt(uint32_t);
 extern void load_tr(uint32_t);
 extern void store_gdt(void*);
 extern void store_idt(void*);
+extern uint32_t store_tr();
 
 extern void load_kern_cs();
 extern void load_ds(uint32_t ds);

@@ -150,7 +150,7 @@ enum {
 
 // --> segment selector.
 #define SEG_SEL(x)          ((x) * 8)
-#define SEG_TSS(x)          (SEG_SEL(GDT_TSS) + (x))
+#define SEG_TSS(x)          (SEG_SEL(GDT_TSS + (x)))
 
 // --> segment predefines.
 enum {
