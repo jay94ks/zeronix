@@ -49,6 +49,9 @@ global cpu_mfence;
 global cpu_pause;
 global cpu_nop;
 
+global cpu_clear_ts;
+global cpu_set_ts;
+
 read_cr0:
     push ebp
     mov ebp, esp
@@ -481,3 +484,41 @@ cpu_pause:
 cpu_nop:
     nop
     ret
+
+cpu_clear_ts:
+    clts
+    ret
+
+cpu_set_ts:
+    push ebp
+    mov ebp, esp
+
+    push eax
+    push ebx
+
+    mov eax, cr0
+    mov ebx, eax
+
+    ; test TS bit.
+    and ax, 0x08
+
+    ; if TS = 0,
+    cmp ax, 0
+    jz .set_ts
+
+    .okay:
+        pop ebx
+        pop eax
+
+        mov esp, ebp
+        pop ebp
+        ret
+
+    .set_ts:
+        mov eax, ebx
+
+        ; set TS = 1.
+        or ax, 0x08
+
+        mov cr0, eax
+        jmp .okay

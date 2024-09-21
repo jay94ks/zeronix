@@ -61,7 +61,7 @@ void karch_except_init() {
     karch_tables_load_idt(gv_except, 0);
 }
 
-void karch_except(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+void karch_except(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_intr_regs_t* regs) {
     karch_irq_intr_begin(frame);
 
     uint8_t irqn = n + IRQ_EXCEPTION_OFFSET;

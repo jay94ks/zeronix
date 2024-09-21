@@ -468,7 +468,7 @@ uint8_t karch_lapic_eoi() {
  * Called from apic_idt.asm.
  * `n` value: refer `gv_apic_hw`.
 */
-void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_intr_regs_t* regs) {
     karch_irq_intr_begin(frame);
 
     if (n <= MAX_IOAPIC_IRQ && ioapic_irq[n].apic) {
@@ -500,7 +500,7 @@ void karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
  * Called from apic_idt.asm.
  * `n` value: refer `gv_apic_zb`.
 */
-void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+void karch_apic_zbint(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_intr_regs_t* regs) {
     karch_irq_intr_begin(frame);
 
     if (n >= 0xf0 && n <= 0xff) {

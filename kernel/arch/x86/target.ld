@@ -63,5 +63,6 @@ SECTIONS
 
 		_mb_size = . - _mb_virt_base;
 	}
+	
     _mb_end = .;
 }

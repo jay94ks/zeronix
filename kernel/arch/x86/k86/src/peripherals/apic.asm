@@ -3,6 +3,9 @@ section .text
 ; code segment.
 SEG_KERN_CS equ (1 * 8)
 
+; include task switching features.
+%include "src/tasks/task.inc"
+
 ; --> defined at apic_idt.c.
 extern karch_apic_hwint;
 extern karch_apic_zbint;
@@ -10,21 +13,28 @@ extern karch_apic_zbint;
 ; usage: KARCH_APIC_HWINT_xx [IRQN]
 %macro KARCH_APIC_HWINT_xx 1
     push 0
-    push ebp    ; + 4
-    push ebx    ; + 4
-    push eax    ; + 4
-    mov ebp, esp
-
+    push ebp
+    mov ebp, esp ; remember here.
+    ; n
+    push ebp    ; store esp.
+    STORE_REGS
+    ; n - alpha.
+        
     ; [ebp + 16]: cs or sp / == cs: kernel mode.
-    cmp dword [ebp + 20], SEG_KERN_CS
+    cmp dword [ebp + 12], SEG_KERN_CS
     je .kern
+
     ; ip, cs, flags + sp, ss are pushed.
     mov ebx, 0  ; --> user to kernel switched.
 
     .all:
         ; --> compute frame pointer.
+        
         mov eax, ebp
-        add eax, 12     ; --> for dummy error code.
+        mov ebp, esp
+
+        push esp        ; --> to pass stored register frames.
+        add eax, 4      ; --> for dummy error code.
 
         ; call karch_apic_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame).
         push eax        ; --> frame.
@@ -36,8 +46,11 @@ extern karch_apic_zbint;
         call karch_apic_hwint
 
         mov esp, ebp
-        pop eax
-        pop ebx
+
+        RESTORE_REGS
+        pop ebp
+
+        mov esp, ebp
         pop ebp
         add esp, 4      ; remove error code.
         iret
@@ -52,20 +65,26 @@ extern karch_apic_zbint;
 %macro KARCH_APIC_INTR  1
     push 0
     push ebp    ; + 4
-    push ebx    ; + 4
-    push eax    ; + 4
     mov ebp, esp
+    ; n
+    push ebp    ; store esp.
+    STORE_REGS
+    ; n - alpha.
 
     ; [ebp + 16]: cs or sp / == cs: kernel mode.
-    cmp dword [ebp + 20], SEG_KERN_CS
+    cmp dword [ebp + 12], SEG_KERN_CS
     je .kern
+    
     ; ip, cs, flags + sp, ss are pushed.
     mov ebx, 0  ; --> user to kernel switched.
 
     .all:
         ; --> compute frame pointer.
         mov eax, ebp
-        add eax, 12     ; --> for dummy error code.
+        mov ebp, esp
+
+        push esp        ; --> to pass stored register frames.
+        add eax, 4      ; --> for dummy error code.
 
         ; call karch_apic_hwint(uint32_t k, karch_intr_frame_t* frame).
         push eax        ; --> frame.
@@ -77,8 +96,11 @@ extern karch_apic_zbint;
         call karch_apic_zbint
 
         mov esp, ebp
-        pop eax
-        pop ebx
+
+        RESTORE_REGS
+        pop ebp
+
+        mov esp, ebp
         pop ebp
         add esp, 4      ; remove error code.
         iret

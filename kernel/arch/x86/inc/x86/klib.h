@@ -57,6 +57,8 @@ extern void cpu_mfence();
 extern void cpu_pause();
 
 extern void cpu_nop();
+extern void cpu_clear_ts();
+extern void cpu_set_ts();
 
 #ifdef __cplusplus
 }

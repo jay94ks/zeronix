@@ -1,4 +1,5 @@
 #define __ARCH_X86_INTERNALS__
+#include <x86/tasks/task.h>
 #include <x86/k86/tables.h>
 #include <x86/k86/taskseg.h>
 #include <x86/k86/paging.h>
@@ -23,11 +24,15 @@ extern void* _karch_tss0_stack;
 #define AMD_MSR_EFER		            0xC0000080	/* extended features msr */
 #define AMD_MSR_STAR		            0xC0000081	/* SYSCALL params msr */
 
+// --> from `tasks/task.c`.
+extern void karch_task_dummy_init();
+
 // --
 void karch_taskseg_init() {
     kmemset(tss, 0, sizeof(tss));
     kmemset(tss_sm, 0, sizeof(tss_sm));
 
+    karch_task_dummy_init();
     karch_taskseg_setup(0, 0);
 }
 
@@ -74,16 +79,15 @@ uint8_t karch_taskseg_setup(uint8_t n, void* stack_top) {
     seg->access = PRESENT | (PRIV_KERN << DPL_SHIFT) | TSS_TYPE;
 
     kmemset(tss, 0, sizeof(karch_tss_t));
-    tss->ds = tss->es = tss->fs = tss->gs = tss->ss0 = GDT_KERN_DS;
-    tss->cs = GDT_KERN_CS;
+    tss->ds = tss->es = tss->fs = tss->gs = tss->ss = tss->ss0 = SEG_SEL(GDT_KERN_DS);
+    tss->cs = SEG_SEL(GDT_KERN_CS);
     tss->iobase = sizeof(karch_tss_t);
     tss->sp0 = (uint32_t)(tss_sm[n] = sm);
     
     sm->cpu = n;
-    sm->proc = 0;
+    sm->prev = sm->next = 0;
 
     uint8_t syscall_impl = karch_env_syscall_type();
-
     if ((syscall_impl & ENV_USE_SYSENTER) != 0) {
         write_msr(INTEL_MSR_SYSENTER_CS, 0, SEG_SEL(GDT_KERN_CS));
         write_msr(INTEL_MSR_SYSENTER_ESP, 0, tss->sp0);

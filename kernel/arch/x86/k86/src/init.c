@@ -1,4 +1,4 @@
-#define __ARCH_X86_INTERNALS__
+#define __ARCH_X86_INTERNALS__ 1
 #include <x86/k86.h>
 #include <x86/smp.h>
 #include <x86/klib.h>

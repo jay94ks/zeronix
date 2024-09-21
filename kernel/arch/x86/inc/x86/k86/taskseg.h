@@ -12,12 +12,12 @@ extern "C" {
  * karch_x86_stackmark_t
  */
 struct karch_x86_stackmark_t {
-    karch_reg32_t proc;
+    karch_reg32_t prev;
+    karch_reg32_t next;
     karch_reg32_t cpu;
 } __packed;
 
 /* shorthand. */
-typedef struct karch_x86_tss_t karch_tss_t;
 typedef struct karch_x86_stackmark_t karch_stackmark_t;
 
 #ifdef __ARCH_X86_INTERNALS__

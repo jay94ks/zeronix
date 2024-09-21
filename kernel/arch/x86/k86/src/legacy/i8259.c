@@ -188,7 +188,7 @@ void karch_i8259_imcr_enable() {
     }
 }
 
-void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame) {
+void karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame, karch_intr_regs_t* regs) {
     karch_irq_intr_begin(frame);
     karch_i8259_mask(n);
 

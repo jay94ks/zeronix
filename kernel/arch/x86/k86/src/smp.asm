@@ -113,6 +113,11 @@ karch_smp_startup_ap32:
     mov esp, _kstack_tail
     mov ebp, esp
 
+    mov esi, __smp_ap_id
+    mov eax, dword [esi]
+
+    push eax
+
     call karch_k86_load_segs
 	jmp	karch_smp_boot_ap32
 

@@ -13,6 +13,7 @@
 
 #include <x86/peripherals/acpi.h>
 #include <x86/peripherals/apic.h>
+#include <x86/peripherals/fpu.h>
 #include <x86/k86/cpulocal.h>
 
 #include <zeronix/kstring.h>
@@ -491,6 +492,7 @@ void karch_smp_init_ap32() {
     // --> setup CPU local variables for current CPU.
     karch_cpulocals_init();
     karch_lapic_enable(now_id);
+    karch_fpu_init();
     
     // --> set the ready bit.
     karch_smp_set_ready(now_id);

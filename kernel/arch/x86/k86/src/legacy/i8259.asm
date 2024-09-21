@@ -1,5 +1,8 @@
 section .text
 
+; include task switching features.
+%include "src/tasks/task.inc"
+
 ; code segment.
 SEG_KERN_CS equ (1 * 8)
 
@@ -27,21 +30,27 @@ extern karch_i8259_hwint;
 ; -----------------
 %macro KARCH_i8259_HWINT_xx 1
     push 0      ; dummy error code.
-    push ebp    ; + 4
-    push ebx    ; + 4
-    push eax    ; + 4
+    push ebp    ; + 4 = irq frame pointer.
     mov ebp, esp
+    ; n
+    push ebp    ; store esp.
+    STORE_REGS
+    ; n - alpha.
 
     ; [ebp + 20]: cs or sp / == cs: kernel mode.
     cmp dword [ebp + 20], SEG_KERN_CS
     je .kern
+
     ; ip, cs, flags + sp, ss are pushed.
     mov ebx, 0  ; --> user to kernel switched.
 
     .all:
         ; --> compute frame pointer.
         mov eax, ebp
-        add eax, 12
+        mov ebp, esp
+
+        push esp        ; --> to pass stored register frames.
+        add eax, 4      ; --> for dummy error code.
 
         ; call karch_i8259_hwint(uint32_t n, uint32_t k, karch_intr_frame_t* frame).
         push eax        ; --> frame.
@@ -53,10 +62,13 @@ extern karch_i8259_hwint;
         call karch_i8259_hwint
 
         mov esp, ebp
-        pop eax
-        pop ebx
+
+        RESTORE_REGS
         pop ebp
-        add esp, 4      ; remove dummy error code.
+
+        mov esp, ebp
+        pop ebp
+        add esp, 4      ; remove error code.
         iret
 
     .kern:
